@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, BadgeDollarSign, ChartNoAxesCombined } from "lucide-react";
 
 import { useSession } from "@/components/session-provider";
+import { PortfolioCharts } from "@/components/portfolio-charts";
 import { formatPortfolioMoney, portfolioHeadlines, portfolioLine, portfolioPartners } from "@/lib/pdm-portfolio";
 import { catalogSolutionById, customerSponsor, handoffLabel, isCustomerViewer } from "@/lib/session";
 
@@ -79,8 +80,8 @@ function PdmHome() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className="md-card-outlined p-6" aria-labelledby="portfolio-title">
+      <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section className="md-card-outlined flex flex-col p-6" aria-labelledby="portfolio-title">
           <h1 id="portfolio-title" className="md-headline-medium">Illustrative portfolio</h1>
           <p className="md-body-medium mt-2 text-[var(--md-sys-color-on-surface-variant)]">{portfolioLine()}</p>
           <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -90,30 +91,10 @@ function PdmHome() {
             <Headline term="Fund approved" detail={`${formatPortfolioMoney(portfolioHeadlines.fundApproved)} across ${portfolioHeadlines.claims} claims`} />
             <Headline term="Pipeline" detail={formatPortfolioMoney(portfolioHeadlines.pipeline)} />
           </dl>
-          <table className="mt-6 w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)]">
-                <th className="py-2 pr-3 font-medium">Partner</th>
-                <th className="py-2 pr-3 font-medium">Sessions</th>
-                <th className="py-2 pr-3 font-medium">Hackathons booked</th>
-                <th className="py-2 pr-3 font-medium">Pilots signed</th>
-                <th className="py-2 pr-3 font-medium">Fund approved</th>
-                <th className="py-2 font-medium">Pipeline</th>
-              </tr>
-            </thead>
-            <tbody>
-              {portfolioPartners.map((row) => (
-                <tr key={row.partner} className="border-b border-[var(--md-sys-color-outline-variant)]">
-                  <td className="py-2 pr-3">{row.partner}</td>
-                  <td className="py-2 pr-3">{row.sessions}</td>
-                  <td className="py-2 pr-3">{row.booked}</td>
-                  <td className="py-2 pr-3">{row.signed}</td>
-                  <td className="py-2 pr-3">{formatPortfolioMoney(row.fundApproved)}</td>
-                  <td className="py-2">{formatPortfolioMoney(row.pipeline)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-auto flex flex-wrap items-center gap-3 pt-6">
+            <Link href="/scope" onClick={() => setFocus("session")} className="md-button-filled">Open the session</Link>
+            <Link href="/funding" className="md-button-outlined">Review funding request</Link>
+          </div>
         </section>
 
         <section className="md-card-outlined p-6" aria-labelledby="live-session-title">
@@ -153,13 +134,35 @@ function PdmHome() {
               {titles.map((title) => <li key={title} className="md-body-medium">{title}</li>)}
             </ul>
           )}
-          <div className="mt-6 flex flex-col items-start gap-3">
-            <Link href="/scope" onClick={() => setFocus("session")} className="md-button-filled">Open the session</Link>
-            <Link href="/funding" className="md-button-outlined">Review funding request</Link>
-            <Link href="/telemetry" className="md-button-outlined">View the rows</Link>
-          </div>
         </section>
       </div>
+      <PortfolioCharts />
+      <section className="md-card-outlined mt-6 p-6" aria-label="Portfolio by partner">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)]">
+              <th className="py-2 pr-3 font-medium">Partner</th>
+              <th className="py-2 pr-3 font-medium">Sessions</th>
+              <th className="py-2 pr-3 font-medium">Hackathons booked</th>
+              <th className="py-2 pr-3 font-medium">Pilots signed</th>
+              <th className="py-2 pr-3 font-medium">Fund approved</th>
+              <th className="py-2 font-medium">Pipeline</th>
+            </tr>
+          </thead>
+          <tbody>
+            {portfolioPartners.map((row) => (
+              <tr key={row.partner} className="border-b border-[var(--md-sys-color-outline-variant)]">
+                <td className="py-2 pr-3">{row.partner}</td>
+                <td className="py-2 pr-3">{row.sessions}</td>
+                <td className="py-2 pr-3">{row.booked}</td>
+                <td className="py-2 pr-3">{row.signed}</td>
+                <td className="py-2 pr-3">{formatPortfolioMoney(row.fundApproved)}</td>
+                <td className="py-2">{formatPortfolioMoney(row.pipeline)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </div>
   );
 }

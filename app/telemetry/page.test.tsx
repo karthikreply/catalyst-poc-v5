@@ -41,4 +41,36 @@ describe("telemetry sample run column", () => {
     const live = renderToStaticMarkup(<TelemetryPage />);
     expect(live).toContain("Yes");
   });
+
+  it("shows the five funnel stages and the drop from the previous step", () => {
+    useSessionMock.mockReturnValue({
+      graph: initialSessionGraph,
+      brand: brands.cdw,
+      viewer: { actor: "pdm", name: "Priya Raghavan", org: "Google" },
+      hydrated: true,
+    });
+    const markup = renderToStaticMarkup(<TelemetryPage />);
+    for (const stage of ["Scoped", "Run", "Hackathon proposed", "Hackathon booked", "Pilot signed"]) {
+      expect(markup).toContain(stage);
+    }
+    expect(markup).toMatch(/\d+% did not continue/);
+    expect(markup).toContain("All partners");
+  });
+
+  it("limits the partner breakdown to the partner's own rows", () => {
+    useSessionMock.mockReturnValue({
+      graph: initialSessionGraph,
+      brand: brands.cdw,
+      viewer: { actor: "partner", name: "Ravi Menon", org: "CDW" },
+      hydrated: true,
+    });
+    const markup = renderToStaticMarkup(<TelemetryPage />);
+    const partnerBreakdown = markup.slice(markup.indexOf("Sessions by partner"), markup.indexOf("Sessions by pattern"));
+    expect(partnerBreakdown).toContain("CDW");
+    expect(partnerBreakdown).not.toContain("Insight");
+    expect(partnerBreakdown).not.toContain("SoftwareOne");
+    expect(partnerBreakdown).not.toContain("SHI");
+    expect(markup).toContain("By quarter");
+    expect(markup).toContain("CDW");
+  });
 });

@@ -42,9 +42,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     document.title = wordmark;
   }, [hydrated, wordmark]);
 
+  // The chooser paints before hydration and brings its own <main>.
+  if (pathname === "/" || pathname === "/enter" || pathname.startsWith("/enter/")) return <>{children}</>;
   // The stored viewer is unknown until hydration.
   if (!hydrated) return null;
-  if (pathname === "/" || pathname === "/enter" || pathname.startsWith("/enter/")) return <main>{children}</main>;
 
   return (
     <div className="md-shell">

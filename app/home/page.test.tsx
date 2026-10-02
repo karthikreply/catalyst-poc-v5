@@ -68,6 +68,7 @@ describe("program dashboard", () => {
     expect(markup).not.toContain("Partner network");
     expect(markup).not.toContain("Priya");
     expect(markup).not.toContain("Illustrative portfolio");
+    expect(markup).not.toContain("Hackathons booked by quarter");
     expect(markup).not.toContain("Telemetry");
     expect(markup).not.toContain("Funding");
   });
@@ -86,14 +87,21 @@ describe("program dashboard", () => {
     expect(markup).toContain("Insight");
     expect(markup).toContain("SHI");
     expect(markup).toContain("Insight is the quiet partner.");
+    expect(markup).toContain("Where the book drops");
+    expect(markup).toContain("Partners");
+    expect(markup).toContain("Money");
+    expect(markup).toContain("Hackathons booked by quarter");
+    expect(markup).toContain("Q3 2026");
+    expect(markup).toContain(">11<");
     expect(markup).toContain("Live session");
     expect(markup).toContain("Heartland Mutual Insurance");
     expect(markup).toContain("Not booked");
+    expect(markup.indexOf("Open the session")).toBeLessThan(markup.indexOf("Live session"));
     expect(markup).toContain('href="/scope"');
-    expect(markup).toContain("Review funding request");
+    expect(markup.indexOf("Review funding request")).toBeLessThan(markup.indexOf("Live session"));
     expect(markup).toContain('href="/funding"');
-    expect(markup).toContain("View the rows");
-    expect(markup).toContain('href="/telemetry"');
+    expect(markup).not.toContain("View the rows");
+    expect(markup).not.toContain('href="/telemetry"');
     expect(markup).not.toContain("Three doors");
     expect(markup).not.toContain(">Session</button>");
     expect(markup).not.toContain(">Hackathon</button>");
@@ -116,6 +124,9 @@ describe("program dashboard", () => {
     expect(markup).toContain("26");
     expect(markup).toContain("$5.0M");
     expect(markup).toContain("$5.5M");
+    expect(markup).toContain("Hackathons booked by quarter");
+    expect(markup).toContain("Q3 2026");
+    expect(markup).toContain(">11<");
 
     sessionFor("pdm", true, setPilotPick(booked, booked.hackathon!.solutionIds[0]));
     const signed = renderToStaticMarkup(<Home />);
@@ -133,6 +144,7 @@ describe("program dashboard", () => {
     expect(markup).toContain("Handoff");
     expect(markup).toContain("Not yet handed off");
     expect(markup).not.toContain("Illustrative portfolio");
+    expect(markup).not.toContain("Hackathons booked by quarter");
     expect(markup).not.toContain("Insight");
     expect(markup).not.toContain("Programs");
     expect(markup).not.toContain("Support");

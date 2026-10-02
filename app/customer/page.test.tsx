@@ -72,6 +72,7 @@ describe("customer home", () => {
     expect(markup).not.toContain("Partner network");
     expect(markup).not.toContain("Priya");
     expect(markup).not.toContain("Illustrative portfolio");
+    expect(markup).not.toContain("Hackathons booked by quarter");
   });
 
   it("shows the format choice on a seeded partner-led session opened from the customer door", () => {

@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useSession } from "@/components/session-provider";
 import { patterns } from "@/lib/seed";
 import { isCustomerViewer, hasCompleteCostComponents, hasCompleteValueInputs, liveSampleRunFlag } from "@/lib/session";
+import { BookedShareChart, TelemetryFunnel, TelemetryQuarterChart } from "@/components/telemetry-charts";
 import {
   canViewOpportunityDetail,
   isBookedOutcome,
@@ -40,23 +41,6 @@ function OutcomeStatus({ outcome }: { outcome: TelemetryOutcome }) {
       <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
       {outcome}
     </span>
-  );
-}
-
-function Breakdown({ title, rows, details }: { title: string; rows: [string, number][]; details?: Record<string, string> }) {
-  const max = Math.max(...rows.map(([, value]) => value), 1);
-  return (
-    <section className="md-card-outlined p-5">
-      <h2 className="md-title-medium">{title}</h2>
-      <div className="mt-5 space-y-4">
-        {rows.map(([label, value]) => (
-          <div key={label}>
-            <div className="md-body-medium mb-2 flex justify-between gap-3"><span>{label}{details?.[label] && <span className="md-label-medium ml-2 text-[var(--md-sys-color-on-surface-variant)]">{details[label]}</span>}</span><span className="font-semibold tabular-nums">{value}</span></div>
-            <div className="h-2 rounded-[var(--md-sys-shape-full)] bg-[var(--md-sys-color-surface-container-high)]"><div className="h-full rounded-[var(--md-sys-shape-full)] bg-[var(--md-sys-color-primary)]" style={{ width: `${(value / max) * 100}%` }} /></div>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -106,30 +90,31 @@ export default function TelemetryPage() {
   const summary = summarizeTelemetry(rows);
   const countBy = (key: "partner" | "pattern" | "mechanic") =>
     Object.entries(rows.reduce<Record<string, number>>((counts, row) => ({ ...counts, [row[key]]: (counts[row[key]] ?? 0) + 1 }), {}));
-  const funnel = [
-    ["Scoped", rows.length],
-    ["Run", summary.sessionsRun],
-    ["Hackathon proposed", summary.hackathonsProposed],
-    ["Hackathon booked", summary.hackathonsBooked],
-    ["Hackathon decided", summary.hackathonsDecided],
-    ["Pilot signed", summary.pilotsSigned],
-  ] as [string, number][];
-  const patternConversion = Object.fromEntries(
-    countBy("pattern").map(([pattern, count]) => {
-      const booked = rows.filter((row) => row.pattern === pattern && isBookedOutcome(row.outcome)).length;
-      return [pattern, `${booked} booked of ${count}`];
-    }),
-  );
-  const mechanicRows: [string, number][] = [
-    ["Value sprint", rows.filter((row) => row.mechanic === "value-sprint").length],
-    ["Ghost ledger", rows.filter((row) => row.mechanic === "ghost-ledger").length],
-  ];
+  const bookedOf = (key: "partner" | "pattern" | "mechanic", label: string) =>
+    rows.filter((row) => row[key] === label && isBookedOutcome(row.outcome)).length;
+  const shareRows = (key: "partner" | "pattern" | "mechanic", captionFor?: (label: string, count: number, booked: number) => string) =>
+    countBy(key).map(([label, count]) => {
+      const booked = bookedOf(key, label);
+      return { label, count, booked, caption: captionFor?.(label, count, booked) };
+    });
   const valueSprintConversion = mechanicConversion(rows, "value-sprint");
   const ghostLedgerConversion = mechanicConversion(rows, "ghost-ledger");
-  const mechanicDetails = {
-    "Value sprint": `${valueSprintConversion.funded} booked of ${valueSprintConversion.total} · ${valueSprintConversion.rate}% conversion`,
-    "Ghost ledger": `${ghostLedgerConversion.funded} booked of ${ghostLedgerConversion.total} · ${ghostLedgerConversion.rate}% conversion`,
-  };
+  const partnerRows = shareRows("partner", (_label, count, booked) => `${booked} booked of ${count}`);
+  const patternRows = shareRows("pattern", (_label, count, booked) => `${booked} booked of ${count}`);
+  const formatRows = [
+    {
+      label: "Value sprint",
+      count: valueSprintConversion.total,
+      booked: valueSprintConversion.funded,
+      caption: `${valueSprintConversion.funded} booked of ${valueSprintConversion.total} · ${valueSprintConversion.rate}% conversion`,
+    },
+    {
+      label: "Ghost ledger",
+      count: ghostLedgerConversion.total,
+      booked: ghostLedgerConversion.funded,
+      caption: `${ghostLedgerConversion.funded} booked of ${ghostLedgerConversion.total} · ${ghostLedgerConversion.rate}% conversion`,
+    },
+  ];
   const sampleBooking = sampleRunBookingSummary(rows);
   const overlayRow = rows.find((row) => row.id === graph.session.id);
   const recent = [
@@ -189,25 +174,19 @@ export default function TelemetryPage() {
         ))}
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        {viewer.actor !== "partner" && <Breakdown title="Sessions by partner" rows={countBy("partner")} />}
-        <Breakdown title={`Sessions by pattern · ${viewer.actor === "partner" ? `${brand.partnerName} cohort n=${rows.length}` : `visible cohort n=${rows.length}`}`} rows={countBy("pattern")} details={patternConversion} />
-        <Breakdown title={`Sessions by format · ${viewer.actor === "partner" ? `${brand.partnerName} cohort n=${rows.length}` : `visible cohort n=${rows.length}`}`} rows={mechanicRows} details={mechanicDetails} />
+      <div className="mt-5 grid items-stretch gap-5 lg:grid-cols-2">
+        <BookedShareChart title="Sessions by partner" rows={partnerRows} />
+        <BookedShareChart title={`Sessions by pattern · ${viewer.actor === "partner" ? `${brand.partnerName} cohort n=${rows.length}` : `visible cohort n=${rows.length}`}`} rows={patternRows} />
       </div>
 
-      <section className="md-card-outlined mt-5 p-5">
-        <h2 className="md-title-medium">Conversion funnel · scoped cohort n={rows.length}</h2>
-        <div className="mt-5 grid gap-2 md:grid-cols-5">
-          {funnel.map(([label, value], index) => (
-            <div key={label} className="relative rounded-[var(--md-sys-shape-small)] border-l-4 border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-surface-container)] p-4" style={{ opacity: 1 - index * 0.08 }}>
-              <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">{label}</p><p className="md-title-large mt-1">{value}</p>
-            </div>
-          ))}
-        </div>
-        <p className="md-body-medium mt-4 text-[var(--md-sys-color-on-surface-variant)]">
-          Booked after a sample run: {sampleBooking.bookedAfter} of {sampleBooking.ran} that ran one
-        </p>
-      </section>
+      <TelemetryFunnel rows={rows} />
+      <p className="md-body-medium mt-4 text-[var(--md-sys-color-on-surface-variant)]">
+        Booked after a sample run: {sampleBooking.bookedAfter} of {sampleBooking.ran} that ran one
+      </p>
+      <div className="mt-5 grid items-stretch gap-5 lg:grid-cols-2">
+        <BookedShareChart title={`Sessions by format · ${viewer.actor === "partner" ? `${brand.partnerName} cohort n=${rows.length}` : `visible cohort n=${rows.length}`}`} rows={formatRows} />
+        <TelemetryQuarterChart rows={rows} title={viewer.actor === "partner" ? brand.partnerName : "All partners"} />
+      </div>
 
       <section className="md-card-outlined mt-5 overflow-hidden">
         <div className="flex items-end justify-between border-b border-[var(--md-sys-color-outline-variant)] p-5">
