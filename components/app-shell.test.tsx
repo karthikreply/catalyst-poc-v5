@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -43,7 +43,12 @@ describe("app shell navigation", () => {
     expect(markup).toContain('href="/scope"');
     expect(markup).toContain('href="/funding"');
     expect(markup).toContain("Your engagement");
-    expect(markup).toContain("Dana Reyes · customer");
+    expect(markup).toContain("CDW");
+    expect(markup).not.toContain("Partner network");
+    expect(markup).not.toContain("Priya");
+    expect(markup).toContain("Switch person");
+    expect(markup).toContain('href="/enter"');
+    expect(markup).not.toContain("Illustrative portfolio");
     expect(markup).not.toContain('href="/telemetry"');
     expect(markup).not.toContain('href="/sessions"');
     expect(markup).not.toContain("My sessions");
@@ -61,28 +66,26 @@ describe("app shell navigation", () => {
       expect(markup).toContain('href="/telemetry"');
       expect(markup).toContain("Programs");
       expect(markup).toContain("Support");
-      expect(markup).toContain("Partner network");
+      expect(markup).toContain("Switch person");
+      expect(markup).toContain('href="/enter"');
       expect(markup).not.toContain("Your engagement");
+      expect(markup).not.toContain("Mock partner portal");
     }
+    expect(shellMarkup("partner")).toContain("CDW");
+    expect(shellMarkup("partner")).not.toContain(">PN<");
+    expect(shellMarkup("pdm")).toContain("Google");
+    expect(shellMarkup("partner")).not.toContain("Partner network");
+    expect(shellMarkup("pdm")).not.toContain("CDW");
+    expect(shellMarkup("pdm")).not.toContain("SoftwareOne");
   });
 
-  it("routes the dropdown to the customer home or my sessions", () => {
-    const setActor = sessionFor("partner");
-    const view = render(<AppShell><p>body</p></AppShell>);
-    fireEvent.change(view.getByLabelText("Viewing as"), { target: { value: "customer" } });
-    expect(setActor).toHaveBeenCalledWith("customer");
-    expect(push).toHaveBeenCalledWith("/customer");
-
-    push.mockClear();
-    const setPartner = sessionFor("customer");
-    view.rerender(<AppShell><p>body</p></AppShell>);
-    fireEvent.change(view.getByLabelText("Viewing as"), { target: { value: "partner" } });
-    expect(setPartner).toHaveBeenCalledWith("partner");
-    expect(push).toHaveBeenCalledWith("/sessions");
-
-    push.mockClear();
-    fireEvent.change(view.getByLabelText("Viewing as"), { target: { value: "pdm" } });
-    expect(push).toHaveBeenLastCalledWith("/sessions");
+  it("names the document for the person who is here", () => {
+    sessionFor("partner");
+    render(<AppShell><p>body</p></AppShell>);
+    expect(document.title).toBe("CDW");
+    sessionFor("pdm");
+    render(<AppShell><p>body</p></AppShell>);
+    expect(document.title).toBe("Google");
   });
 
   it("labels an unnamed customer as Customer", () => {
@@ -99,7 +102,8 @@ describe("app shell navigation", () => {
       hydrated: true,
     });
     const markup = renderToStaticMarkup(<AppShell><p>body</p></AppShell>);
-    expect(markup).toContain(">Customer<");
+    expect(markup).toContain("Switch person");
     expect(markup).not.toContain("Dana Reyes · customer");
+    expect(markup).not.toContain("Priya");
   });
 });

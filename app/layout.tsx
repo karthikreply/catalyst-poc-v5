@@ -10,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Partner network · Value sessions",
+  title: "Value session",
   description: "Illustrative partner-program and value-session demo",
 };
 

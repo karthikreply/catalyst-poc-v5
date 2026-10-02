@@ -69,6 +69,9 @@ describe("customer home", () => {
     expect(markup).not.toContain("calendar.google.com");
     expect(markup).not.toContain("What the three days will be.");
     expect(markup).not.toContain("Apply for DAF");
+    expect(markup).not.toContain("Partner network");
+    expect(markup).not.toContain("Priya");
+    expect(markup).not.toContain("Illustrative portfolio");
   });
 
   it("shows the format choice on a seeded partner-led session opened from the customer door", () => {

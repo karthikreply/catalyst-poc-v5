@@ -345,12 +345,13 @@ describe("SessionProvider action permissions", () => {
           <AppShell><p>body</p></AppShell>
         </SessionProvider>,
       );
-      await waitFor(() => expect(view.getByLabelText("Viewing as")).toHaveValue("customer"));
+      await waitFor(() => expect(view.getByRole("link", { name: "CDW" })).toBeTruthy());
       expect(shellNav.push).not.toHaveBeenCalled();
       expect(sessionStorage.getItem("catalyst-viewer-actor")).toBe("customer");
       expect(view.queryByText("My sessions")).toBeNull();
+      expect(view.queryByText("Priya Raghavan · PDM")).toBeNull();
       expect(view.getAllByText("Your engagement").length).toBeGreaterThan(0);
-      expect(view.getByRole("link", { name: /Partner network/ })).toHaveAttribute("href", "/customer");
+      expect(view.getByRole("link", { name: "CDW" })).toHaveAttribute("href", "/customer");
       view.unmount();
     }
   });
@@ -364,9 +365,9 @@ describe("SessionProvider action permissions", () => {
         <AppShell><p>body</p></AppShell>
       </SessionProvider>,
     );
-    await waitFor(() => expect(view.getByLabelText("Viewing as")).toHaveValue("customer"));
+    await waitFor(() => expect(view.getByRole("link", { name: "CDW" })).toBeTruthy());
     expect(sessionStorage.getItem("catalyst-viewer-actor")).toBe("customer");
-    expect(view.getByRole("option", { name: "Dana Reyes · customer" })).toBeTruthy();
+    expect(view.queryByText("Priya Raghavan · PDM")).toBeNull();
     view.unmount();
   });
 });

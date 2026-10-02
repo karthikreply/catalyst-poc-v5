@@ -37,22 +37,22 @@ describe("vendor shell routing", () => {
   });
 
   it("produces vendor breadcrumbs for dashboard, flow, funding, and telemetry", () => {
-    expect(breadcrumbForPath("/", "partner")).toEqual(["Partner network", "Dashboard"]);
-    expect(breadcrumbForPath("/", "pdm")).toEqual(["Partner network", "Dashboard"]);
-    expect(breadcrumbForPath("/plan", "partner")).toEqual(["Partner network", "Value sessions", "Plan"]);
-    expect(breadcrumbForPath("/rank", "pdm")).toEqual(["Partner network", "Value sessions", "Rank"]);
-    expect(breadcrumbForPath("/hackathon", "partner")).toEqual(["Partner network", "Value sessions", "Hackathon"]);
+    expect(breadcrumbForPath("/", "partner")).toEqual(["Home", "Dashboard"]);
+    expect(breadcrumbForPath("/", "pdm")).toEqual(["Google", "Dashboard"]);
+    expect(breadcrumbForPath("/plan", "partner")).toEqual(["Home", "Value sessions", "Plan"]);
+    expect(breadcrumbForPath("/rank", "pdm")).toEqual(["Google", "Value sessions", "Rank"]);
+    expect(breadcrumbForPath("/hackathon", "partner")).toEqual(["Home", "Value sessions", "Hackathon"]);
     expect(isBrandFlowPath("/hackathon", "customer")).toBe(true);
     expect(isBrandFlowPath("/rank", "partner")).toBe(true);
     expect(isBrandFlowPath("/try", "partner")).toBe(true);
     expect(isBrandFlowPath("/try", "customer")).toBe(true);
-    expect(breadcrumbForPath("/try", "partner")).toEqual(["Partner network", "Value sessions", "Try it"]);
+    expect(breadcrumbForPath("/try", "partner")).toEqual(["Home", "Value sessions", "Try it"]);
     expect(breadcrumbForPath("/try/", "customer")).toEqual(["Your engagement", "Value sessions", "Try it"]);
-    expect(breadcrumbForPath("/funding", "partner")).toEqual(["Partner network", "Funding"]);
-    expect(breadcrumbForPath("/telemetry", "pdm")).toEqual(["Partner network", "Telemetry"]);
-    expect(breadcrumbForPath("/sessions", "partner")).toEqual(["Partner network", "My sessions"]);
-    expect(breadcrumbForPath("/sessions", "pdm")).toEqual(["Partner network", "My sessions"]);
-    expect(breadcrumbForPath("/customer", "partner")).toEqual(["Partner network", "Customer"]);
+    expect(breadcrumbForPath("/funding", "partner")).toEqual(["Home", "Funding"]);
+    expect(breadcrumbForPath("/telemetry", "pdm")).toEqual(["Google", "Telemetry"]);
+    expect(breadcrumbForPath("/sessions", "partner")).toEqual(["Home", "My sessions"]);
+    expect(breadcrumbForPath("/sessions", "pdm")).toEqual(["Google", "My sessions"]);
+    expect(breadcrumbForPath("/customer", "partner")).toEqual(["Home", "Customer"]);
     expect(isBrandFlowPath("/customer", "customer")).toBe(false);
   });
 

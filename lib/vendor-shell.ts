@@ -48,7 +48,7 @@ export function mergesSessionHeader(pathname: string) {
 }
 
 export function breadcrumbForPath(pathname: string, actor: Actor) {
-  const root = isCustomerViewer(actor) ? "Your engagement" : "Partner network";
+  const root = isCustomerViewer(actor) ? "Your engagement" : actor === "pdm" ? "Google" : "Home";
   if (pathname === "/") return [root, "Dashboard"];
   if (pathname.startsWith("/sessions")) return [root, "My sessions"];
   if (pathname.startsWith("/funding")) return [root, "Funding"];

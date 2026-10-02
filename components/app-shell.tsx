@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import {
   BadgeDollarSign,
   Boxes,
   CalendarDays,
   ChartNoAxesCombined,
-  ChevronDown,
   CircleHelp,
   LayoutDashboard,
   Presentation,
 } from "lucide-react";
 
-import { type Actor } from "@/lib/seed";
-import { isCustomerViewer, viewerForActor, viewingAsCustomerLabel } from "@/lib/session";
+import { isCustomerViewer } from "@/lib/session";
 import { breadcrumbForPath, isBrandFlowPath, navItemsForActor, type VendorNavItem } from "@/lib/vendor-shell";
 import { BrandFlowFrame } from "./brand-flow-frame";
 import { useSession } from "./session-provider";
@@ -31,55 +30,36 @@ const navIcons: Record<VendorNavItem["label"], typeof LayoutDashboard> = {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { viewer, setActor, hydrated, graph, brand } = useSession();
-  const customerOption = viewingAsCustomerLabel(viewerForActor("customer", brand, graph).name);
+  const { viewer, hydrated, brand } = useSession();
+  const customer = isCustomerViewer(viewer.actor);
   const breadcrumbs = breadcrumbForPath(pathname, viewer.actor);
   const brandFlow = isBrandFlowPath(pathname, viewer.actor);
   const navItems = navItemsForActor(viewer.actor);
+  const wordmark = viewer.actor === "pdm" ? "Google" : brand.partnerName;
 
-  function onViewerChange(next: Actor) {
-    if (next === viewer.actor) return;
-    setActor(next);
-    // This dropdown is the only control that navigates when the viewer changes.
-    const customerHome = graph.session.focus === "hackathon" ? "/hackathon" : "/customer";
-    router.push(isCustomerViewer(next) ? customerHome : "/sessions");
-  }
+  useEffect(() => {
+    if (!hydrated) return;
+    document.title = wordmark;
+  }, [hydrated, wordmark]);
 
-  // The stored viewer is unknown until hydration. Painting the partner default
-  // mounts the dropdown on "partner" and links the wordmark at the partner dashboard.
+  // The stored viewer is unknown until hydration.
   if (!hydrated) return null;
+  if (pathname === "/enter" || pathname.startsWith("/enter/")) return <main>{children}</main>;
 
   return (
     <div className="md-shell">
       <header className="md-top-app-bar sticky top-0 z-50 flex h-16 items-center gap-4 px-4 md:px-6">
-        <Link href={isCustomerViewer(viewer.actor) ? "/customer" : "/"} className="flex items-center gap-3 rounded-[var(--md-sys-shape-small)]">
-          <span className="md-label-large grid size-10 place-items-center rounded-[var(--md-sys-shape-large)] bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]">PN</span>
-          <span>
-            <span className="md-title-medium block">Partner network</span>
-            <span className="md-label-medium block text-[var(--md-sys-color-on-surface-variant)]">Mock partner portal · illustrative</span>
-          </span>
+        <Link href={customer ? "/customer" : "/"} className="flex items-center gap-3 rounded-[var(--md-sys-shape-small)]">
+          <span className="md-title-medium">{wordmark}</span>
         </Link>
-
-        <div className="relative ml-auto min-w-52">
-          <label className="sr-only" htmlFor="viewer-switch">Viewing as</label>
-          <select
-            id="viewer-switch"
-            value={viewer.actor}
-            onChange={(event) => onViewerChange(event.target.value as Actor)}
-            className="md-label-large h-10 w-full appearance-none rounded-[var(--md-sys-shape-small)] border border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface)] pl-3 pr-9 text-[var(--md-sys-color-on-surface)]"
-          >
-            <option value="pdm">Priya Raghavan · PDM</option>
-            <option value="partner">Ravi Menon · partner</option>
-            <option value="customer">{customerOption}</option>
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-3 size-4 text-[var(--md-sys-color-on-surface-variant)]" />
-        </div>
+        <Link href="/enter" className="md-label-large ml-auto text-[var(--md-sys-color-primary)]">
+          Switch person
+        </Link>
       </header>
 
       <div className="grid min-h-[calc(100vh-64px)] md:grid-cols-[184px_1fr]">
         <aside className="md-nav-rail hidden p-3 md:block">
-          <nav aria-label="Partner network">
+          <nav aria-label={customer ? "Your engagement" : wordmark}>
             <ul className="space-y-1">
               {navItems.map((item) => {
                 const Icon = navIcons[item.label];

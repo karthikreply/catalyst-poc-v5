@@ -52,6 +52,7 @@ import {
   savePartnerNote as savePartnerNoteInGraph,
   saveSessionOutcome as saveSessionOutcomeInGraph,
   setPilotPick as setPilotPickInGraph,
+  setSessionFocus,
   setSamplePosition as setSamplePositionInGraph,
   startOverSampleRun as startOverSampleRunInGraph,
   startSampleRun as startSampleRunInGraph,
@@ -197,9 +198,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   function setFocus(focus: SessionFocus) {
-    setGraph((current) => (
-      current.session.focus === focus ? current : { ...current, session: { ...current.session, focus } }
-    ));
+    setGraph((current) => setSessionFocus(current, focus));
   }
 
   function setActor(next: Actor) {

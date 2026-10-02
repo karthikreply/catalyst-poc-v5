@@ -6,7 +6,7 @@ import Link from "next/link";
 import { BookHackathonAction } from "@/components/book-hackathon-action";
 import { HackathonBookingForm } from "@/components/hackathon-booking-form";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { SolutionProductList, ThreeDayShapeList } from "@/components/what-the-three-days-will-be";
+import { SolutionProductList } from "@/components/what-the-three-days-will-be";
 import { useSession } from "@/components/session-provider";
 import {
   bookBlockReason,
@@ -162,8 +162,6 @@ export default function HackathonPage() {
               <p className="mt-3 text-sm text-black/70">{solutions.length} of 3 chosen. Choose the rest on <Link href="/rank" className="underline underline-offset-2">Rank</Link>.</p>
             )}
             {booked && <p className="mt-4 text-sm font-semibold">Date · {graph.hackathon?.date}</p>}
-            <h3 id="hackathon-day-shape" className="mt-5 text-base font-semibold">What the three days will be.</h3>
-            <ThreeDayShapeList labelledBy="hackathon-day-shape" />
           </section>
         )}
 

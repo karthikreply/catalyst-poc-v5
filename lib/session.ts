@@ -23,6 +23,7 @@ import {
   type PartnerNote,
   type SampleRun,
   type Session,
+  type SessionFocus,
   type SessionGraph,
   type SolutionCandidate,
 } from "./seed";
@@ -791,6 +792,12 @@ export function canBookHackathon(actor: Actor) {
 }
 
 export const hackathonGuardCopy = "A hackathon follows a value session. Run one first.";
+
+/** Writes only session.focus. Booking, the shortlist, and the pilot pick stay as they are. */
+export function setSessionFocus(graph: SessionGraph, focus: SessionFocus): SessionGraph {
+  if (graph.session.focus === focus) return graph;
+  return { ...graph, session: { ...graph.session, focus } };
+}
 
 /** The run is finished, or the solution is already chosen. Never substitutes the Heartland record. */
 export function sessionReachedShortlist(graph: SessionGraph) {

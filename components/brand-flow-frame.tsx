@@ -8,7 +8,7 @@ import { Check, ChevronDown } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { brands, withBrandPeople } from "@/lib/brands";
 import type { Mechanic } from "@/lib/seed";
-import { isCustomerViewer, customerFormatLabels, customerHasAccount } from "@/lib/session";
+import { isCustomerViewer, customerFormatLabels, customerHasAccount, earliestIncompleteStep, hackathonGuardCopy, sessionReachedShortlist } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { mergesSessionHeader } from "@/lib/vendor-shell";
 import { useSession } from "./session-provider";
@@ -25,11 +25,13 @@ const sessionSteps = [
 
 export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { brand, brandId, setBrandId, graph, setMechanic, canEditSession, viewer } = useSession();
+  const { brand, brandId, setBrandId, graph, setMechanic, setFocus, canEditSession, viewer } = useSession();
   const funding = pathname.startsWith("/funding");
   const tryIt = pathname.startsWith("/try");
-  const hackathonFocus = graph.session.focus === "hackathon";
+  const reached = sessionReachedShortlist(graph);
+  const hackathonFocus = graph.session.focus === "hackathon" && reached;
   const steps = hackathonFocus ? sessionSteps.slice(3) : sessionSteps;
+  const guardStep = earliestIncompleteStep(graph);
   const activeIndex = tryIt ? -1 : Math.max(0, steps.findIndex((step) => pathname.startsWith(step.href)));
   const nextStep = activeIndex < 0 ? { href: "/rank", label: "Rank" } : steps[(activeIndex + 1) % steps.length];
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
@@ -37,12 +39,13 @@ export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
   const customer = isCustomerViewer(viewer.actor);
   const showAccount = sessionHeader && (!customer || customerHasAccount(viewer.actor, graph));
   const people = withBrandPeople(brand);
-  const facilitation =
-    graph.session.delivery === "self-service"
-      ? "Customer self-service · uncommon scale path · no partner facilitator present"
-      : graph.session.delivery === "google-facilitated"
-        ? `Google-facilitated by ${graph.session.facilitator?.name ?? "Priya Raghavan"} · Google`
-        : `Facilitated by ${graph.session.facilitator?.name ?? "Ravi Menon"} · ${people.facilitatorOrg}`;
+  const facilitation = graph.session.delivery === "self-service"
+    ? "Customer self-service · uncommon scale path · no partner facilitator present"
+    : graph.session.delivery === "google-facilitated"
+      ? customer
+        ? `Facilitated by ${brand.partnerName}`
+        : `Google-facilitated by ${graph.session.facilitator?.name ?? "Priya Raghavan"} · Google`
+      : `Facilitated by ${graph.session.facilitator?.name ?? "Ravi Menon"} · ${people.facilitatorOrg}`;
 
   return (
     <div
@@ -159,6 +162,33 @@ export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </header>
+      <div className="border-b border-black/10 bg-white">
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 lg:px-8">
+          <button
+            type="button"
+            aria-pressed={graph.session.focus === "session"}
+            onClick={() => setFocus("session")}
+            className="text-sm font-semibold"
+          >
+            Session
+          </button>
+          {reached ? (
+            <button
+              type="button"
+              aria-pressed={graph.session.focus === "hackathon"}
+              onClick={() => setFocus("hackathon")}
+              className="text-sm font-semibold"
+            >
+              Hackathon
+            </button>
+          ) : (
+            <p className="text-sm text-black/70">
+              {hackathonGuardCopy}{" "}
+              <Link href={guardStep.href} className="font-semibold underline underline-offset-2">{guardStep.label}</Link>
+            </p>
+          )}
+        </div>
+      </div>
       <main>{children}</main>
       {!(customer && sessionHeader) && (
         <div className="fixed bottom-3 left-1/2 z-40 -translate-x-1/2 md:hidden">

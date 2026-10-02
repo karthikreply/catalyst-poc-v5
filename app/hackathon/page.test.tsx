@@ -69,6 +69,9 @@ describe("hackathon solutions", () => {
     const others = initialSessionGraph.solutions.filter((solution) => !ids.slice(0, 3).includes(solution.id));
     expect(others.length).toBeGreaterThan(0);
     for (const solution of others) expect(markup).not.toContain(solution.title);
+    expect(markup).toContain("Book the hackathon");
+    expect(markup).not.toContain("What the three days will be.");
+    expect(markup).not.toContain("Start from the pain.");
   });
 
   it("opens the calendar in a new tab and links on to the business case once booked", async () => {

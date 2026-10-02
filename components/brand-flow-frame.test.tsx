@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { brands } from "@/lib/brands";
 import { initialSessionGraph } from "@/lib/seed";
-import { applyColdScope, coldScopeDefaults } from "@/lib/session";
+import { applyColdScope, coldScopeDefaults, earliestIncompleteStep, hackathonGuardCopy } from "@/lib/session";
 
 const state = vi.hoisted(() => ({ pathname: "/plan" }));
 const useSessionMock = vi.fn();
@@ -20,6 +20,7 @@ function frame(actor: string, graph = initialSessionGraph) {
     brandId: "cdw",
     setBrandId: vi.fn(),
     setMechanic: vi.fn(),
+    setFocus: vi.fn(),
     canEditSession: true,
     viewer: { actor, name: "Someone", org: "Org" },
   });
@@ -60,5 +61,32 @@ describe("customer chrome", () => {
     expect(markup).toContain("Heartland Mutual Insurance · value session");
     expect(markup).toContain(">Format<");
     expect(markup).toContain("Next: Rank");
+  });
+
+  it("puts the partner mark above one Session and Hackathon control", () => {
+    state.pathname = "/scope";
+    const graph = {
+      ...initialSessionGraph,
+      ranking: { ...initialSessionGraph.ranking, selected: ["a", "b", "c"] },
+    };
+    const markup = frame("partner", graph);
+    expect(markup.match(/<button[^>]*>Session<\/button>/g)).toHaveLength(1);
+    expect(markup.match(/<button[^>]*>Hackathon<\/button>/g)).toHaveLength(1);
+    expect(markup.indexOf(">CDW<")).toBeLessThan(markup.indexOf(">Session</button>"));
+  });
+
+  it("shows the hackathon guard before a shortlist and does not open a Heartland account", () => {
+    state.pathname = "/hackathon";
+    const graph = {
+      ...initialSessionGraph,
+      session: { ...initialSessionGraph.session, focus: "hackathon" as const, customerName: "Reply" },
+    };
+    const markup = frame("partner", graph);
+    const step = earliestIncompleteStep(graph);
+    expect(markup).toContain(hackathonGuardCopy);
+    expect(markup).toContain(`href="${step.href}"`);
+    expect(markup).toContain(step.label);
+    expect(markup).not.toContain("Heartland");
+    expect(markup).not.toMatch(/<button[^>]*>Hackathon<\/button>/);
   });
 });

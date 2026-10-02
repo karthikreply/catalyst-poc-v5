@@ -11,6 +11,7 @@ import {
   recordNotGoingAhead,
   sessionReachedShortlist,
   setPilotPick,
+  setSessionFocus,
   toggleSelected,
   hackathonGuardCopy,
 } from "./session";
@@ -68,6 +69,28 @@ describe("hackathon focus", () => {
     const selfService = applyDeliveryMode(initialSessionGraph, "self-service");
     const chosen = selectThree(selfService);
     expect(bookBlockReason("customer", chosen)).toBeNull();
+  });
+
+  it("leaves the booking and the pilot pick in place when focus changes", () => {
+    const booked = bookHackathon(selectThree(), draft);
+    const going = setPilotPick(booked, booked.hackathon!.solutionIds[0]);
+    const focused = setSessionFocus(going, "hackathon");
+    expect(focused.session.focus).toBe("hackathon");
+    expect(focused.hackathon?.solutionIds).toEqual(going.hackathon?.solutionIds);
+    expect(focused.hackathon?.date).toBe(going.hackathon?.date);
+    expect(focused.outcome.pilotPick).toBe(going.outcome.pilotPick);
+    expect(setSessionFocus(focused, "hackathon")).toBe(focused);
+  });
+
+  it("leaves the booking and the pilot pick unchanged when focus changes", () => {
+    const booked = bookHackathon(selectThree(), draft);
+    const going = setPilotPick(booked, booked.hackathon!.solutionIds[0]);
+    const focused = setSessionFocus(going, "hackathon");
+    expect(focused.session.focus).toBe("hackathon");
+    expect(focused.hackathon?.solutionIds).toEqual(going.hackathon?.solutionIds);
+    expect(focused.hackathon?.date).toBe(going.hackathon?.date);
+    expect(focused.outcome.pilotPick).toBe(going.outcome.pilotPick);
+    expect(setSessionFocus(focused, "session").hackathon).toEqual(focused.hackathon);
   });
 
   it("keeps the solution, the date, and the pilot status when focus or role changes", () => {
