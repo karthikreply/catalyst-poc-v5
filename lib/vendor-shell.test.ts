@@ -19,6 +19,7 @@ describe("vendor shell routing", () => {
     expect(isBrandFlowPath("/artifact", "customer")).toBe(true);
     expect(isBrandFlowPath("/pilot-spec", "pdm")).toBe(true);
     expect(isBrandFlowPath("/", "partner")).toBe(false);
+    expect(isBrandFlowPath("/home", "partner")).toBe(false);
     expect(isBrandFlowPath("/funding", "partner")).toBe(true);
     expect(isBrandFlowPath("/funding", "pdm")).toBe(false);
     expect(isBrandFlowPath("/funding", "customer")).toBe(false);
@@ -37,8 +38,10 @@ describe("vendor shell routing", () => {
   });
 
   it("produces vendor breadcrumbs for dashboard, flow, funding, and telemetry", () => {
-    expect(breadcrumbForPath("/", "partner")).toEqual(["Home", "Dashboard"]);
-    expect(breadcrumbForPath("/", "pdm")).toEqual(["Google", "Dashboard"]);
+    expect(breadcrumbForPath("/", "partner")).toEqual(["Home"]);
+    expect(breadcrumbForPath("/enter", "partner")).toEqual(["Home"]);
+    expect(breadcrumbForPath("/home", "partner")).toEqual(["Home", "Dashboard"]);
+    expect(breadcrumbForPath("/home", "pdm")).toEqual(["Google", "Dashboard"]);
     expect(breadcrumbForPath("/plan", "partner")).toEqual(["Home", "Value sessions", "Plan"]);
     expect(breadcrumbForPath("/rank", "pdm")).toEqual(["Google", "Value sessions", "Rank"]);
     expect(breadcrumbForPath("/hackathon", "partner")).toEqual(["Home", "Value sessions", "Hackathon"]);
@@ -65,7 +68,7 @@ describe("vendor shell routing", () => {
     expect(navItemsForActor("partner").map((item) => item.label)).toEqual(vendorNavItems.map((item) => item.label));
     expect(navItemsForActor("customer").some((item) => item.href === "/sessions" || item.label === "My sessions")).toBe(false);
     expect(navItemsForActor("partner").find((item) => item.label === "My sessions")?.href).toBe("/sessions");
-    expect(navItemsForActor("pdm").find((item) => item.label === "Dashboard")?.href).toBe("/");
+    expect(navItemsForActor("pdm").find((item) => item.label === "Dashboard")?.href).toBe("/home");
     for (const path of ["/", "/customer", "/scope", "/run", "/rank", "/artifact", "/funding"]) {
       expect(breadcrumbForPath(path, "customer")[0]).toBe("Your engagement");
     }

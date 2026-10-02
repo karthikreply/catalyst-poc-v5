@@ -2,7 +2,7 @@ import type { Actor } from "./seed";
 import { isCustomerViewer } from "./session";
 
 export const vendorNavItems = [
-  { label: "Dashboard", href: "/", illustrative: false },
+  { label: "Dashboard", href: "/home", illustrative: false },
   { label: "My sessions", href: "/sessions", illustrative: false },
   { label: "Programs", href: null, illustrative: true },
   { label: "Value sessions", href: "/scope", illustrative: false },
@@ -13,7 +13,7 @@ export const vendorNavItems = [
 
 export type VendorNavItem = {
   label: (typeof vendorNavItems)[number]["label"];
-  href: "/" | "/customer" | "/sessions" | "/scope" | "/funding" | "/telemetry" | null;
+  href: "/home" | "/customer" | "/sessions" | "/scope" | "/funding" | "/telemetry" | null;
   illustrative: boolean;
 };
 
@@ -49,7 +49,8 @@ export function mergesSessionHeader(pathname: string) {
 
 export function breadcrumbForPath(pathname: string, actor: Actor) {
   const root = isCustomerViewer(actor) ? "Your engagement" : actor === "pdm" ? "Google" : "Home";
-  if (pathname === "/") return [root, "Dashboard"];
+  if (pathname === "/" || pathname.startsWith("/enter")) return [root];
+  if (pathname === "/home" || pathname.startsWith("/home/")) return [root, "Dashboard"];
   if (pathname.startsWith("/sessions")) return [root, "My sessions"];
   if (pathname.startsWith("/funding")) return [root, "Funding"];
   if (pathname.startsWith("/telemetry")) return [root, "Telemetry"];

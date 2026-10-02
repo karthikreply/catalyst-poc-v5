@@ -8,9 +8,10 @@ import { initialSessionGraph } from "@/lib/seed";
 
 const useSessionMock = vi.fn();
 const push = vi.hoisted(() => vi.fn());
+const nav = vi.hoisted(() => ({ pathname: "/home" }));
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/",
+  usePathname: () => nav.pathname,
   useRouter: () => ({ push }),
 }));
 vi.mock("./session-provider", () => ({ useSession: () => useSessionMock() }));
@@ -34,7 +35,10 @@ function shellMarkup(actor: string) {
 }
 
 describe("app shell navigation", () => {
-  beforeEach(() => push.mockReset());
+  beforeEach(() => {
+    push.mockReset();
+    nav.pathname = "/home";
+  });
 
   it("limits the customer rail to this engagement", () => {
     const markup = shellMarkup("customer");
@@ -60,7 +64,7 @@ describe("app shell navigation", () => {
   it("keeps the partner and PDM rails and breadcrumbs", () => {
     for (const actor of ["partner", "pdm"]) {
       const markup = shellMarkup(actor);
-      expect(markup).toContain('href="/"');
+      expect(markup).toContain('href="/home"');
       expect(markup).toContain('href="/sessions"');
       expect(markup).toContain("My sessions");
       expect(markup).toContain('href="/telemetry"');
@@ -77,6 +81,17 @@ describe("app shell navigation", () => {
     expect(shellMarkup("partner")).not.toContain("Partner network");
     expect(shellMarkup("pdm")).not.toContain("CDW");
     expect(shellMarkup("pdm")).not.toContain("SoftwareOne");
+  });
+
+  it("opens the shared root and /enter as the chooser, without the rail", () => {
+    sessionFor("partner");
+    for (const pathname of ["/", "/enter"]) {
+      nav.pathname = pathname;
+      const markup = renderToStaticMarkup(<AppShell><p>body</p></AppShell>);
+      expect(markup).toContain("body");
+      expect(markup).not.toContain("Switch person");
+      expect(markup).not.toContain("My sessions");
+    }
   });
 
   it("names the document for the person who is here", () => {

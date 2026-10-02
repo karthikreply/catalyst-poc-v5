@@ -44,12 +44,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // The stored viewer is unknown until hydration.
   if (!hydrated) return null;
-  if (pathname === "/enter" || pathname.startsWith("/enter/")) return <main>{children}</main>;
+  if (pathname === "/" || pathname === "/enter" || pathname.startsWith("/enter/")) return <main>{children}</main>;
 
   return (
     <div className="md-shell">
       <header className="md-top-app-bar sticky top-0 z-50 flex h-16 items-center gap-4 px-4 md:px-6">
-        <Link href={customer ? "/customer" : "/"} className="flex items-center gap-3 rounded-[var(--md-sys-shape-small)]">
+        <Link href={customer ? "/customer" : "/home"} className="flex items-center gap-3 rounded-[var(--md-sys-shape-small)]">
           <span className="md-title-medium">{wordmark}</span>
         </Link>
         <Link href="/enter" className="md-label-large ml-auto text-[var(--md-sys-color-primary)]">

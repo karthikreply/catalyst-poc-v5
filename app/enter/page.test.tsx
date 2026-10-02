@@ -38,10 +38,10 @@ describe("entry", () => {
 
     fireEvent.click(view.getByRole("button", { name: /^Partner/ }));
     expect(setActor).toHaveBeenCalledWith("partner");
-    expect(push).toHaveBeenCalledWith("/");
+    expect(push).toHaveBeenCalledWith("/home");
 
     fireEvent.click(view.getByRole("button", { name: /^Google PDM/ }));
     expect(setActor).toHaveBeenCalledWith("pdm");
-    expect(push).toHaveBeenCalledWith("/");
+    expect(push).toHaveBeenCalledWith("/home");
   });
 });

@@ -53,7 +53,7 @@ export default function CustomerHomePage() {
         <p className="md-body-medium mt-3 text-[var(--md-sys-color-on-surface-variant)]">
           This page is the customer&apos;s view of their engagement. Switch Viewing as to the customer, or return to the dashboard.
         </p>
-        <Link href="/" className="md-button-outlined mt-6">Back to dashboard</Link>
+        <Link href="/home" className="md-button-outlined mt-6">Back to dashboard</Link>
       </div>
     );
   }
