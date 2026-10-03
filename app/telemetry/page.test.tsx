@@ -55,6 +55,8 @@ describe("telemetry sample run column", () => {
     }
     expect(markup).toMatch(/\d+% did not continue/);
     expect(markup).toContain("All partners");
+    expect(markup).not.toContain("Back to pilot spec");
+    expect(markup).not.toContain('href="/pilot-spec"');
   });
 
   it("limits the partner breakdown to the partner's own rows", () => {
@@ -65,6 +67,7 @@ describe("telemetry sample run column", () => {
       hydrated: true,
     });
     const markup = renderToStaticMarkup(<TelemetryPage />);
+    expect(markup).toContain("Back to pilot spec");
     const partnerBreakdown = markup.slice(markup.indexOf("Sessions by partner"), markup.indexOf("Sessions by pattern"));
     expect(partnerBreakdown).toContain("CDW");
     expect(partnerBreakdown).not.toContain("Insight");

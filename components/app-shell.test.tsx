@@ -65,9 +65,8 @@ describe("app shell navigation", () => {
     for (const actor of ["partner", "pdm"]) {
       const markup = shellMarkup(actor);
       expect(markup).toContain('href="/home"');
-      expect(markup).toContain('href="/sessions"');
-      expect(markup).toContain("My sessions");
       expect(markup).toContain('href="/telemetry"');
+      expect(markup).toContain('href="/funding"');
       expect(markup).toContain("Programs");
       expect(markup).toContain("Support");
       expect(markup).toContain("Switch person");
@@ -75,6 +74,9 @@ describe("app shell navigation", () => {
       expect(markup).not.toContain("Your engagement");
       expect(markup).not.toContain("Mock partner portal");
     }
+    expect(shellMarkup("partner")).toContain('href="/sessions"');
+    expect(shellMarkup("partner")).toContain("My sessions");
+    expect(shellMarkup("partner")).toContain('href="/scope"');
     expect(shellMarkup("partner")).toContain("CDW");
     expect(shellMarkup("partner")).not.toContain(">PN<");
     expect(shellMarkup("pdm")).toContain("Google");
@@ -83,12 +85,74 @@ describe("app shell navigation", () => {
     expect(shellMarkup("pdm")).not.toContain("SoftwareOne");
   });
 
+  it("gives the PDM no session links in the rail", () => {
+    const markup = shellMarkup("pdm");
+    expect(markup).not.toContain('href="/sessions"');
+    expect(markup).not.toContain("My sessions");
+    expect(markup).not.toContain('href="/scope"');
+    expect(markup).not.toContain("Value sessions");
+  });
+
+  it("holds the PDM off the session routes", () => {
+    for (const pathname of ["/sessions", "/scope", "/plan", "/run", "/rank", "/hackathon", "/artifact", "/pilot-spec", "/try"]) {
+      nav.pathname = pathname;
+      const markup = shellMarkup("pdm");
+      expect(markup).toContain("Sessions are partner-held.");
+      expect(markup).toContain("Back to the portfolio");
+      expect(markup).toContain('href="/home"');
+      expect(markup).not.toContain("<p>body</p>");
+    }
+    nav.pathname = "/scope";
+    expect(shellMarkup("partner")).toContain("<p>body</p>");
+    expect(shellMarkup("partner")).not.toContain("Sessions are partner-held.");
+    nav.pathname = "/funding";
+    expect(shellMarkup("pdm")).toContain("<p>body</p>");
+  });
+
+  it("wears the brand skin for the partner and the customer, never for the PDM", () => {
+    for (const actor of ["partner", "customer"]) {
+      const markup = shellMarkup(actor);
+      expect(markup).toContain("--md-sys-color-primary:#cc1827");
+      expect(markup).toContain("--md-sys-font:Arial, Helvetica, sans-serif");
+      expect(markup).toContain("--md-sys-shape-full:4px");
+      expect(markup).toContain("--brand-accent:#cc1827");
+    }
+    const pdm = shellMarkup("pdm");
+    expect(pdm).not.toContain("#cc1827");
+    expect(pdm).not.toContain("--md-sys-font");
+    expect(pdm).not.toContain("--md-sys-shape-full");
+
+    useSessionMock.mockReturnValue({
+      graph: initialSessionGraph,
+      brand: brands.softwareone,
+      viewer: { actor: "partner", name: "Ravi Menon", org: "SoftwareOne" },
+      setActor: vi.fn(),
+      hydrated: true,
+    });
+    const softwareone = renderToStaticMarkup(<AppShell><p>body</p></AppShell>);
+    expect(softwareone).toContain("--md-sys-color-primary:#c84318");
+    expect(softwareone).toContain("--md-sys-shape-full:9999px");
+    expect(softwareone).toContain(">softwareone<");
+    expect(softwareone).not.toContain("#cc1827");
+
+    useSessionMock.mockReturnValue({
+      graph: initialSessionGraph,
+      brand: brands.softwareone,
+      viewer: { actor: "pdm", name: "Priya Raghavan", org: "Platform vendor" },
+      setActor: vi.fn(),
+      hydrated: true,
+    });
+    const pdmUnderSwitch = renderToStaticMarkup(<AppShell><p>body</p></AppShell>);
+    expect(pdmUnderSwitch).not.toContain("#c84318");
+    expect(pdmUnderSwitch).toContain("Google");
+  });
+
   it("opens the shared root and /enter as the chooser, without the rail", () => {
     sessionFor("partner");
     for (const pathname of ["/", "/enter"]) {
       nav.pathname = pathname;
       const markup = renderToStaticMarkup(<AppShell><p>body</p></AppShell>);
-      expect(markup).toContain("body");
+      expect(markup).toContain("<p>body</p>");
       expect(markup).not.toContain("Switch person");
       expect(markup).not.toContain("My sessions");
     }

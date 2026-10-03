@@ -80,7 +80,7 @@ export default function TelemetryPage() {
       closeStyle: graph.session.closeStyle,
       qualified: graph.session.qualified,
       converted: Boolean(graph.hackathon?.booked),
-      fundingClaimSubmitted: false,
+      fundingClaimSubmitted: Boolean(graph.session.fundingClaim),
       daysToFunded: null,
       sampleRun: liveSampleRunFlag(graph),
     };
@@ -218,7 +218,9 @@ export default function TelemetryPage() {
         </div>
       </section>
 
-      <div className="mt-5"><Link href="/pilot-spec" className="md-button-outlined"><ArrowLeft className="size-4" /> Back to pilot spec</Link></div>
+      {viewer.actor !== "pdm" && (
+        <div className="mt-5"><Link href="/pilot-spec" className="md-button-outlined"><ArrowLeft className="size-4" /> Back to pilot spec</Link></div>
+      )}
     </div>
   );
 }

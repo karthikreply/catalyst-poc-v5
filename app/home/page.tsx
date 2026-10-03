@@ -7,7 +7,7 @@ import { ArrowRight, BadgeDollarSign, ChartNoAxesCombined } from "lucide-react";
 
 import { useSession } from "@/components/session-provider";
 import { PortfolioCharts } from "@/components/portfolio-charts";
-import { awaitingReviewCount, fundingRequestsForPdm } from "@/lib/funding-book";
+import { awaitingReviewCount, fundingRequestsForPdm, returnedCount } from "@/lib/funding-book";
 import { fewestSignedLine, formatPortfolioMoney, fundRatio, portfolio, portfolioSummary } from "@/lib/pdm-portfolio";
 import { customerSponsor, handoffLabel, isCustomerViewer } from "@/lib/session";
 
@@ -73,8 +73,7 @@ function PdmHome() {
   const { graph, brand } = useSession();
   const requests = fundingRequestsForPdm(graph, brand.partnerName);
   const awaiting = awaitingReviewCount(requests);
-  const awaitingAmount = requests.filter((row) => row.status === "awaiting-review").reduce((sum, row) => sum + row.amount, 0);
-  const awaitingPartners = new Set(requests.filter((row) => row.status === "awaiting-review").map((row) => row.partner)).size;
+  const returned = returnedCount(requests);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
@@ -93,8 +92,8 @@ function PdmHome() {
             <Headline term="Signed value to fund" detail={`About ${fundRatio()} to 1`} />
           </dl>
           <div className="mt-auto flex flex-wrap items-center gap-3 pt-6">
-            <Link href="/funding" className="md-button-filled">Funding requests</Link>
-            <Link href="/telemetry" className="md-button-outlined">Telemetry</Link>
+            <Link href="/funding" className="md-button-filled">Review funding requests</Link>
+            <Link href="/telemetry" className="md-button-outlined">View telemetry</Link>
           </div>
         </section>
 
@@ -104,16 +103,19 @@ function PdmHome() {
             <li>
               <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Funding</p>
               <Link href="/funding" className="md-title-medium mt-1 block text-[var(--md-sys-color-primary)] underline-offset-4 hover:underline">
-                {awaiting} {awaiting === 1 ? "claim" : "claims"} awaiting review
+                {awaiting} funding {awaiting === 1 ? "request" : "requests"} awaiting review
               </Link>
-              <p className="md-body-medium mt-1 text-[var(--md-sys-color-on-surface-variant)]">
-                {formatPortfolioMoney(awaitingAmount)} requested across {awaitingPartners} partners.
-              </p>
             </li>
             <li>
-              <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Quiet partner</p>
-              <p className="md-title-medium mt-1">{fewestSignedLine()}</p>
+              <p className="md-title-medium">{fewestSignedLine()}</p>
             </li>
+            {returned > 0 && (
+              <li>
+                <Link href="/funding" className="md-title-medium text-[var(--md-sys-color-primary)] underline-offset-4 hover:underline">
+                  {returned} returned for evidence
+                </Link>
+              </li>
+            )}
           </ul>
         </section>
       </div>

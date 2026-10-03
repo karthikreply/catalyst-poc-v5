@@ -98,8 +98,12 @@ describe("program dashboard", () => {
     expect(markup).toContain("Hackathons booked by quarter");
     expect(markup).toContain("Q3 2026");
     expect(markup).toContain("Needs your attention");
-    expect(markup).toContain(`${awaitingReviewCount(fundingRequestsForPdm(initialSessionGraph, "CDW"))} claims awaiting review`);
-    expect(markup).toContain("Quiet partner");
+    expect(markup).toContain(`${awaitingReviewCount(fundingRequestsForPdm(initialSessionGraph, "CDW"))} funding requests awaiting review`);
+    expect(markup).toContain("returned for evidence");
+    expect(markup).toContain("Review funding requests");
+    expect(markup).toContain("View telemetry");
+    expect(markup).not.toContain('href="/scope"');
+    expect(markup).toContain(fewestSignedLine());
     expect(markup).toContain('href="/funding"');
     expect(markup).toContain('href="/telemetry"');
     expect(markup).not.toContain("Live session");
@@ -139,7 +143,7 @@ describe("program dashboard", () => {
     sessionFor("pdm", true, submitFundingClaim(initialSessionGraph, "Ravi Menon"));
     const markup = renderToStaticMarkup(<Home />);
     const requests = fundingRequestsForPdm(submitFundingClaim(initialSessionGraph, "Ravi Menon"), "CDW");
-    expect(markup).toContain(`${awaitingReviewCount(requests)} claims awaiting review`);
+    expect(markup).toContain(`${awaitingReviewCount(requests)} funding requests awaiting review`);
   });
 
   it("keeps the partner on his session, funding, and telemetry", () => {

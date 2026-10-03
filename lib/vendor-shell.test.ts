@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { breadcrumbForPath, isBrandFlowPath, mergesSessionHeader, navItemsForActor, vendorNavItems } from "./vendor-shell";
+import { breadcrumbForPath, isBrandFlowPath, isPartnerHeldPath, mergesSessionHeader, navItemsForActor, partnerHeldCopy, vendorNavItems } from "./vendor-shell";
 
 describe("vendor shell routing", () => {
   it("keeps dashboard, my sessions, value sessions, funding, and telemetry live", () => {
@@ -27,6 +27,18 @@ describe("vendor shell routing", () => {
     expect(isBrandFlowPath("/sessions", "partner")).toBe(false);
     expect(isBrandFlowPath("/sessions", "pdm")).toBe(false);
     expect(isBrandFlowPath("/sessions/", "partner")).toBe(false);
+  });
+
+  it("holds the PDM off the session list and every session step", () => {
+    expect(partnerHeldCopy).toBe("Sessions are partner-held.");
+    for (const path of ["/sessions", "/sessions/", "/scope", "/plan", "/run", "/rank", "/hackathon", "/try", "/artifact", "/pilot-spec"]) {
+      expect(isPartnerHeldPath(path, "pdm")).toBe(true);
+      expect(isPartnerHeldPath(path, "partner")).toBe(false);
+      expect(isPartnerHeldPath(path, "customer")).toBe(false);
+    }
+    for (const path of ["/", "/enter", "/home", "/funding", "/telemetry", "/customer"]) {
+      expect(isPartnerHeldPath(path, "pdm")).toBe(false);
+    }
   });
 
   it("merges the session header into the brand band on run only", () => {
@@ -69,6 +81,8 @@ describe("vendor shell routing", () => {
     expect(navItemsForActor("customer").some((item) => item.href === "/sessions" || item.label === "My sessions")).toBe(false);
     expect(navItemsForActor("partner").find((item) => item.label === "My sessions")?.href).toBe("/sessions");
     expect(navItemsForActor("pdm").find((item) => item.label === "Dashboard")?.href).toBe("/home");
+    expect(navItemsForActor("pdm").map((item) => item.label)).toEqual(["Dashboard", "Programs", "Funding", "Telemetry", "Support"]);
+    expect(navItemsForActor("pdm").some((item) => item.href === "/sessions" || item.href === "/scope")).toBe(false);
     for (const path of ["/", "/customer", "/scope", "/run", "/rank", "/artifact", "/funding"]) {
       expect(breadcrumbForPath(path, "customer")[0]).toBe("Your engagement");
     }

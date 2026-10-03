@@ -17,8 +17,11 @@ export type VendorNavItem = {
   illustrative: boolean;
 };
 
-/** Partner and PDM keep the program rail. The customer sees this engagement only. */
+const sessionNavLabels: readonly VendorNavItem["label"][] = ["My sessions", "Value sessions"];
+
+/** Partner keeps the program rail. The PDM has no session items. The customer sees this engagement only. */
 export function navItemsForActor(actor: Actor): VendorNavItem[] {
+  if (actor === "pdm") return vendorNavItems.filter((item) => !sessionNavLabels.includes(item.label)).map((item) => ({ ...item }));
   if (!isCustomerViewer(actor)) return vendorNavItems.map((item) => ({ ...item }));
   return [
     { label: "Dashboard", href: "/customer", illustrative: false },
@@ -41,6 +44,14 @@ const flowLabels: Record<string, string> = {
 export function isBrandFlowPath(pathname: string, actor: Actor) {
   if (pathname.startsWith("/funding")) return actor === "partner";
   return Object.keys(flowLabels).some((path) => pathname.startsWith(path));
+}
+
+export const partnerHeldCopy = "Sessions are partner-held.";
+
+/** The PDM does not open sessions. The list and every session step are the partner's. */
+export function isPartnerHeldPath(pathname: string, actor: Actor) {
+  if (actor !== "pdm") return false;
+  return pathname.startsWith("/sessions") || Object.keys(flowLabels).some((path) => pathname.startsWith(path));
 }
 
 export function mergesSessionHeader(pathname: string) {

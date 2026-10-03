@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/components/session-provider";
 import { isCustomerViewer } from "@/lib/session";
 import { sessionsForProfile } from "@/lib/planned-sessions";
+import { partnerHeldCopy } from "@/lib/vendor-shell";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -33,19 +34,25 @@ export default function SessionsPage() {
 
   if (!hydrated || customerViewer) return null;
 
+  // The shell already guards this route for the PDM; this keeps the page honest on its own.
+  if (viewer.actor === "pdm") {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-12 md:px-8">
+        <h1 className="md-headline-medium">{partnerHeldCopy}</h1>
+        <Link href="/home" className="md-button-filled mt-6">Back to the portfolio</Link>
+      </div>
+    );
+  }
+
   const sessions = sessionsForProfile(viewer.actor, graph);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
-      <p className="md-label-large text-[var(--md-sys-color-primary)]">
-        {viewer.actor === "pdm" ? `Partners ${viewer.name} covers` : `Sessions ${viewer.name} runs`}
-      </p>
+      <p className="md-label-large text-[var(--md-sys-color-primary)]">Sessions {viewer.name} runs</p>
       <h1 className="md-display-small mt-2">My sessions</h1>
       <p className="md-headline-medium mt-3">{plannedCount(sessions.length)}</p>
       <p className="md-body-medium mt-2 max-w-2xl text-[var(--md-sys-color-on-surface-variant)]">
-        {viewer.actor === "pdm"
-          ? "Sessions across the partners covered here, including the live session."
-          : "The live session, plus other accounts for this partner."}
+        The live session, plus other accounts for this partner.
       </p>
       <p className="md-label-medium mt-3 text-[var(--md-sys-color-on-surface-variant)]">Illustrative. Not live Salesforce data.</p>
 

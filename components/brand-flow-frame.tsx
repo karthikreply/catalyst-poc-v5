@@ -61,7 +61,7 @@ export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
           <div className="relative flex min-w-fit items-center gap-3">
             {customer ? (
               <div>
-                <p className="font-black tracking-[-0.08em]" style={{ color: brand.accent }}>{brand.partnerName}</p>
+                <p style={{ color: brand.skin.primary, fontWeight: brand.skin.logo.weight, letterSpacing: brand.skin.logo.letterSpacing }}>{brand.skin.logo.text}</p>
                 <p className="text-xs text-black/50">Your engagement</p>
               </div>
             ) : (
@@ -70,10 +70,10 @@ export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
                 aria-haspopup="listbox"
                 aria-expanded={brandPickerOpen}
                 onClick={() => setBrandPickerOpen((open) => !open)}
-                className="flex items-center gap-1 rounded-sm px-1 py-2 font-black tracking-[-0.08em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
-                style={{ color: brand.accent }}
+                className="flex items-center gap-1 rounded-sm px-1 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
+                style={{ color: brand.skin.primary, fontWeight: brand.skin.logo.weight, letterSpacing: brand.skin.logo.letterSpacing }}
               >
-                {brand.mark}<ChevronDown className="size-3.5" />
+                {brand.skin.logo.text}<ChevronDown className="size-3.5" />
               </button>
             )}
             {brandPickerOpen && !customer && (

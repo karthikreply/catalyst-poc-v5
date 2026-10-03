@@ -49,20 +49,16 @@ describe("my sessions", () => {
     expect(markup).not.toContain('href="/scope"');
   });
 
-  it("lists a different set for the PDM, including which partner runs each", () => {
+  it("holds the PDM off the list", () => {
     sessionFor("pdm", true);
     const markup = renderToStaticMarkup(<SessionsPage />);
 
-    expect(markup).toContain("4 sessions planned");
-    expect(markup).toContain("Heartland Mutual Insurance");
-    expect(markup).toContain("Contoso Manufacturing");
-    expect(markup).toContain("Insight");
-    expect(markup).toContain("Fabrikam Retail");
-    expect(markup).toContain("Alpine Credit Union");
-    expect(markup).toContain("SHI");
-    expect(markup).not.toContain("Lakeshore Health");
-    expect(markup).not.toContain("Northwind Benefits");
-    expect(markup).toContain('href="/run"');
+    expect(markup).toContain("Sessions are partner-held.");
+    expect(markup).not.toContain("sessions planned");
+    expect(markup).not.toContain("Heartland Mutual Insurance");
+    expect(markup).not.toContain('href="/run"');
+    expect(markup).toContain('href="/home"');
+    expect(markup).toContain("Back to the portfolio");
   });
 
   it("sends the customer back to their engagement and renders nothing", () => {

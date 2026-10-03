@@ -170,7 +170,7 @@ button, a, input, textarea, select {
 .brand-surface {
   color: #171716;
   background: #f7f7f5;
-  font-family: var(--font-sans);
+  font-family: var(--md-sys-font, var(--font-sans));
 }
 
 .brand-surface button,
@@ -189,7 +189,8 @@ button, a, input, textarea, select {
   min-height: 100vh;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface);
-  font-family: Arial, Roboto, system-ui, sans-serif;
+  /* The partner and customer skins set --md-sys-font on the shell. The PDM falls back. */
+  font-family: var(--md-sys-font, Arial, Roboto, system-ui, sans-serif);
 }
 
 .md-display-small { font-size: 36px; line-height: 44px; font-weight: 400; }

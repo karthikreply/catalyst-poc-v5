@@ -13,8 +13,9 @@ import {
   Presentation,
 } from "lucide-react";
 
+import { skinVars } from "@/lib/brands";
 import { isCustomerViewer } from "@/lib/session";
-import { breadcrumbForPath, isBrandFlowPath, navItemsForActor, type VendorNavItem } from "@/lib/vendor-shell";
+import { breadcrumbForPath, isBrandFlowPath, isPartnerHeldPath, navItemsForActor, partnerHeldCopy, type VendorNavItem } from "@/lib/vendor-shell";
 import { BrandFlowFrame } from "./brand-flow-frame";
 import { useSession } from "./session-provider";
 
@@ -35,7 +36,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const breadcrumbs = breadcrumbForPath(pathname, viewer.actor);
   const brandFlow = isBrandFlowPath(pathname, viewer.actor);
   const navItems = navItemsForActor(viewer.actor);
-  const wordmark = viewer.actor === "pdm" ? "Google" : brand.partnerName;
+  const pdm = viewer.actor === "pdm";
+  const wordmark = pdm ? "Google" : brand.partnerName;
+  const partnerHeld = isPartnerHeldPath(pathname, viewer.actor);
+  // The partner and customer chrome wears the brand skin. The PDM chrome keeps the defaults.
+  const skin = pdm ? undefined : (skinVars(brand.skin) as React.CSSProperties);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -48,10 +53,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!hydrated) return null;
 
   return (
-    <div className="md-shell">
+    <div className="md-shell" style={skin}>
       <header className="md-top-app-bar sticky top-0 z-50 flex h-16 items-center gap-4 px-4 md:px-6">
         <Link href={customer ? "/customer" : "/home"} className="flex items-center gap-3 rounded-[var(--md-sys-shape-small)]">
-          <span className="md-title-medium">{wordmark}</span>
+          {pdm ? (
+            <span className="md-title-medium">{wordmark}</span>
+          ) : (
+            <span
+              className="text-xl leading-none text-[var(--md-sys-color-primary)]"
+              style={{ fontWeight: brand.skin.logo.weight, letterSpacing: brand.skin.logo.letterSpacing }}
+            >
+              {brand.skin.logo.text}
+            </span>
+          )}
         </Link>
         <Link href="/enter" className="md-label-large ml-auto text-[var(--md-sys-color-primary)]">
           Switch person
@@ -96,7 +110,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
             ))}
           </nav>
-          {brandFlow ? <BrandFlowFrame>{children}</BrandFlowFrame> : <main>{children}</main>}
+          {partnerHeld ? (
+            <main className="mx-auto max-w-3xl px-4 py-12 md:px-8">
+              <h1 className="md-headline-medium">{partnerHeldCopy}</h1>
+              <p className="md-body-medium mt-3 text-[var(--md-sys-color-on-surface-variant)]">
+                Partners run value sessions with their customers. What reaches you is the funding request and the telemetry.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/home" className="md-button-filled">Back to the portfolio</Link>
+              </div>
+            </main>
+          ) : brandFlow ? <BrandFlowFrame>{children}</BrandFlowFrame> : <main>{children}</main>}
         </div>
       </div>
     </div>
