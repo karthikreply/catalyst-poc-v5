@@ -53,10 +53,11 @@ describe("customer chrome", () => {
     expect(markup).not.toContain("Next: Rank");
   });
 
-  it("keeps the partner brand switcher and facilitation line", () => {
+  it("keeps the facilitation line without a brand switcher", () => {
     state.pathname = "/run";
     const markup = frame("partner");
-    expect(markup).toContain("aria-haspopup");
+    expect(markup).not.toContain("aria-haspopup");
+    expect(markup).not.toContain("Partner brand");
     expect(markup).toContain("Facilitated by");
     expect(markup).toContain("Heartland Mutual Insurance · value session");
     expect(markup).toContain(">Format<");

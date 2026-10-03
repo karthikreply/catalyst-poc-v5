@@ -13,7 +13,7 @@ import {
   Presentation,
 } from "lucide-react";
 
-import { skinVars } from "@/lib/brands";
+import { brands, skinToCssVars, type BrandId } from "@/lib/brands";
 import { isCustomerViewer } from "@/lib/session";
 import { breadcrumbForPath, isBrandFlowPath, isPartnerHeldPath, navItemsForActor, partnerHeldCopy, type VendorNavItem } from "@/lib/vendor-shell";
 import { BrandFlowFrame } from "./brand-flow-frame";
@@ -31,7 +31,7 @@ const navIcons: Record<VendorNavItem["label"], typeof LayoutDashboard> = {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { viewer, hydrated, brand } = useSession();
+  const { viewer, hydrated, brand, brandId, setBrandId } = useSession();
   const customer = isCustomerViewer(viewer.actor);
   const breadcrumbs = breadcrumbForPath(pathname, viewer.actor);
   const brandFlow = isBrandFlowPath(pathname, viewer.actor);
@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const wordmark = pdm ? "Google" : brand.partnerName;
   const partnerHeld = isPartnerHeldPath(pathname, viewer.actor);
   // The partner and customer chrome wears the brand skin. The PDM chrome keeps the defaults.
-  const skin = pdm ? undefined : (skinVars(brand.skin) as React.CSSProperties);
+  const skin = pdm ? undefined : (skinToCssVars(brand) as React.CSSProperties);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -53,22 +53,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!hydrated) return null;
 
   return (
-    <div className="md-shell" style={skin}>
+    <div>
+      <div className="demo-bar flex h-9 items-center gap-4 px-4">
+        <span>Mock partner portal · illustrative</span>
+        <span className="ml-auto">Viewing as {viewer.name}</span>
+        <label className="flex items-center gap-2">
+          Brand
+          <select
+            aria-label="Brand"
+            value={brandId}
+            disabled={pdm}
+            title={pdm ? "The vendor view doesn't take a partner skin." : undefined}
+            onChange={(event) => setBrandId(event.target.value as BrandId)}
+          >
+            {Object.values(brands).map((option) => (
+              <option key={option.id} value={option.id}>{option.partnerName}</option>
+            ))}
+          </select>
+        </label>
+        <Link href="/enter">Switch person</Link>
+      </div>
+    <div className="md-shell" data-skin={pdm ? "vendor" : "brand"} style={skin}>
       <header className="md-top-app-bar sticky top-0 z-50 flex h-16 items-center gap-4 px-4 md:px-6">
         <Link href={customer ? "/customer" : "/home"} className="flex items-center gap-3 rounded-[var(--md-sys-shape-small)]">
           {pdm ? (
             <span className="md-title-medium">{wordmark}</span>
+          ) : brand.skin.logo?.kind === "image" && brand.skin.logo.src ? (
+            // A partner-supplied file. The three demo skins are wordmarks, so this path is unused today.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={brand.skin.logo.src} alt={brand.skin.logo.text ?? brand.mark} height={brand.skin.logo.height ?? 24} />
           ) : (
             <span
               className="text-xl leading-none text-[var(--md-sys-color-primary)]"
-              style={{ fontWeight: brand.skin.logo.weight, letterSpacing: brand.skin.logo.letterSpacing }}
+              style={{ fontWeight: "var(--brand-logo-weight)", letterSpacing: "var(--brand-letter-spacing)" }}
             >
-              {brand.skin.logo.text}
+              {brand.skin.logo?.text ?? brand.mark}
             </span>
           )}
-        </Link>
-        <Link href="/enter" className="md-label-large ml-auto text-[var(--md-sys-color-primary)]">
-          Switch person
         </Link>
       </header>
 
@@ -85,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <Link
                         href={item.href}
                         aria-current={active ? "page" : undefined}
-                        className={`md-label-large flex min-h-14 items-center gap-3 rounded-[var(--md-sys-shape-large)] px-3 ${active ? "bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]" : "text-[var(--md-sys-color-on-surface-variant)] hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]"}`}
+                        className={`md-label-large flex min-h-14 items-center gap-3 rounded-[var(--md-sys-shape-large)] px-3 ${active ? "bg-[var(--brand-nav-active,var(--md-sys-color-primary-container))] text-[var(--brand-on-nav-active,var(--md-sys-color-on-primary-container))]" : "text-[var(--md-sys-color-on-surface-variant)] hover:bg-[color-mix(in_srgb,var(--md-sys-color-primary)_8%,transparent)]"}`}
                       >
                         <Icon className="size-5" /> {item.label}
                       </Link>
@@ -123,6 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ) : brandFlow ? <BrandFlowFrame>{children}</BrandFlowFrame> : <main>{children}</main>}
         </div>
       </div>
+    </div>
     </div>
   );
 }

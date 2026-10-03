@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check, ChevronDown } from "lucide-react";
+import { Check } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
-import { brands, withBrandPeople } from "@/lib/brands";
+import { resolveSkin, withBrandPeople } from "@/lib/brands";
 import type { Mechanic } from "@/lib/seed";
 import { isCustomerViewer, customerFormatLabels, customerHasAccount, earliestIncompleteStep, hackathonGuardCopy, sessionReachedShortlist } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,7 @@ const sessionSteps = [
 
 export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { brand, brandId, setBrandId, graph, setMechanic, setFocus, canEditSession, viewer } = useSession();
+  const { brand, graph, setMechanic, setFocus, canEditSession, viewer } = useSession();
   const funding = pathname.startsWith("/funding");
   const tryIt = pathname.startsWith("/try");
   const reached = sessionReachedShortlist(graph);
@@ -34,11 +33,11 @@ export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
   const guardStep = earliestIncompleteStep(graph);
   const activeIndex = tryIt ? -1 : Math.max(0, steps.findIndex((step) => pathname.startsWith(step.href)));
   const nextStep = activeIndex < 0 ? { href: "/rank", label: "Rank" } : steps[(activeIndex + 1) % steps.length];
-  const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const sessionHeader = mergesSessionHeader(pathname);
   const customer = isCustomerViewer(viewer.actor);
   const showAccount = sessionHeader && (!customer || customerHasAccount(viewer.actor, graph));
   const people = withBrandPeople(brand);
+  const logo = resolveSkin(brand).logo.text ?? brand.mark;
   const facilitation = graph.session.delivery === "self-service"
     ? "Customer self-service · uncommon scale path · no partner facilitator present"
     : graph.session.delivery === "google-facilitated"
@@ -59,43 +58,10 @@ export function BrandFlowFrame({ children }: { children: React.ReactNode }) {
       <header className="border-b border-black/10 bg-white">
         <div className="mx-auto flex min-h-16 max-w-[1440px] flex-wrap items-center gap-x-5 gap-y-2 px-5 py-2 lg:px-8">
           <div className="relative flex min-w-fit items-center gap-3">
-            {customer ? (
-              <div>
-                <p style={{ color: brand.skin.primary, fontWeight: brand.skin.logo.weight, letterSpacing: brand.skin.logo.letterSpacing }}>{brand.skin.logo.text}</p>
-                <p className="text-xs text-black/50">Your engagement</p>
-              </div>
-            ) : (
-              <button
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded={brandPickerOpen}
-                onClick={() => setBrandPickerOpen((open) => !open)}
-                className="flex items-center gap-1 rounded-sm px-1 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
-                style={{ color: brand.skin.primary, fontWeight: brand.skin.logo.weight, letterSpacing: brand.skin.logo.letterSpacing }}
-              >
-                {brand.skin.logo.text}<ChevronDown className="size-3.5" />
-              </button>
-            )}
-            {brandPickerOpen && !customer && (
-              <div role="listbox" aria-label="Partner brand" className="absolute left-0 top-12 z-50 min-w-44 rounded-sm border border-black/10 bg-white p-1 shadow-lg">
-                {Object.values(brands).map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="option"
-                    aria-selected={option.id === brandId}
-                    onClick={() => {
-                      setBrandId(option.id);
-                      setBrandPickerOpen(false);
-                    }}
-                    className="block w-full rounded-sm px-3 py-2 text-left text-sm font-semibold hover:bg-black/[.04]"
-                    style={option.id === brandId ? { color: option.accent } : undefined}
-                  >
-                    {option.partnerName}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div>
+              <p className="text-[var(--md-sys-color-primary)]" style={{ fontWeight: "var(--brand-logo-weight)", letterSpacing: "var(--brand-letter-spacing)" }}>{logo}</p>
+              {customer && <p className="text-xs text-black/50">Your engagement</p>}
+            </div>
             <span className="h-5 w-px bg-black/15" />
             {showAccount ? (
               <div>

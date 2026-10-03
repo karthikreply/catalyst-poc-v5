@@ -71,8 +71,8 @@ describe("app shell navigation", () => {
       expect(markup).toContain("Support");
       expect(markup).toContain("Switch person");
       expect(markup).toContain('href="/enter"');
+      expect(markup).toContain("Mock partner portal · illustrative");
       expect(markup).not.toContain("Your engagement");
-      expect(markup).not.toContain("Mock partner portal");
     }
     expect(shellMarkup("partner")).toContain('href="/sessions"');
     expect(shellMarkup("partner")).toContain("My sessions");
@@ -81,8 +81,10 @@ describe("app shell navigation", () => {
     expect(shellMarkup("partner")).not.toContain(">PN<");
     expect(shellMarkup("pdm")).toContain("Google");
     expect(shellMarkup("partner")).not.toContain("Partner network");
-    expect(shellMarkup("pdm")).not.toContain("CDW");
-    expect(shellMarkup("pdm")).not.toContain("SoftwareOne");
+    expect(shellMarkup("pdm")).toContain('data-skin="vendor"');
+    expect(shellMarkup("partner")).toContain('data-skin="brand"');
+    expect(shellMarkup("pdm")).toContain("disabled");
+    expect(shellMarkup("pdm")).toContain("take a partner skin.");
   });
 
   it("gives the PDM no session links in the rail", () => {
