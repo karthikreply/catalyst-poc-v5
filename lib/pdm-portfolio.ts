@@ -1,46 +1,85 @@
-/** Frozen illustrative book. Not derived from telemetry, and not changed by the live session. */
+/**
+ * Portfolio derived from the frozen telemetry seed. The live session never changes these figures.
+ * Partner names and the per-claim amount are placeholders.
+ */
+import { isBookedOutcome, telemetrySeed, type TelemetryPartner, type TelemetrySession } from "./telemetry";
 
-export type PortfolioPartner = {
-  partner: "CDW" | "SoftwareOne" | "Insight" | "SHI";
+/** Hackathon-scale illustrative claim. Fund approved is decided rows times this amount. */
+export const ILLUSTRATIVE_FUND_PER_CLAIM = 25_000;
+
+const partnerOrder: TelemetryPartner[] = ["CDW", "SoftwareOne", "Insight", "SHI"];
+const quarterOrder = ["Q4 2024", "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026", "Q3 2026"];
+
+export type PortfolioCounts = {
   sessions: number;
   booked: number;
+  decided: number;
   signed: number;
   fundApproved: number;
-  pipeline: number;
+  signedPilotValue: number;
 };
 
-export const portfolioPartners: readonly PortfolioPartner[] = [
-  { partner: "CDW", sessions: 48, booked: 22, signed: 9, fundApproved: 1_800_000, pipeline: 2_400_000 },
-  { partner: "SoftwareOne", sessions: 36, booked: 19, signed: 11, fundApproved: 2_100_000, pipeline: 1_600_000 },
-  { partner: "Insight", sessions: 14, booked: 3, signed: 1, fundApproved: 200_000, pipeline: 400_000 },
-  { partner: "SHI", sessions: 27, booked: 12, signed: 5, fundApproved: 900_000, pipeline: 1_100_000 },
-];
+export type PortfolioPartnerRow = PortfolioCounts & { partner: TelemetryPartner };
+export type PortfolioQuarterRow = PortfolioCounts & { quarter: string };
 
-export const portfolioHeadlines = {
-  sessions: 125,
-  booked: 56,
-  signed: 26,
-  fundApproved: 5_000_000,
-  claims: 18,
-  pipeline: 5_500_000,
-} as const;
+export type Portfolio = {
+  partners: PortfolioPartnerRow[];
+  quarters: PortfolioQuarterRow[];
+  headlines: PortfolioCounts & { approvedClaims: number; awaitingDecision: number };
+};
 
-/** Frozen quarterly book. Sums to the headlines. Not derived from telemetry. */
-export const portfolioQuarters = [
-  { quarter: "Q4 2024", sessions: 10, booked: 4, signed: 1 },
-  { quarter: "Q1 2025", sessions: 12, booked: 5, signed: 2 },
-  { quarter: "Q2 2025", sessions: 13, booked: 6, signed: 2 },
-  { quarter: "Q3 2025", sessions: 14, booked: 6, signed: 3 },
-  { quarter: "Q4 2025", sessions: 16, booked: 7, signed: 3 },
-  { quarter: "Q1 2026", sessions: 18, booked: 8, signed: 4 },
-  { quarter: "Q2 2026", sessions: 20, booked: 9, signed: 5 },
-  { quarter: "Q3 2026", sessions: 22, booked: 11, signed: 6 },
-] as const;
-
-export function formatPortfolioMoney(value: number) {
-  return `$${(value / 1_000_000).toFixed(1)}M`;
+function isDecided(row: TelemetrySession) {
+  return row.outcome === "Hackathon decided" || row.outcome === "Pilot signed";
 }
 
-export function portfolioLine() {
-  return `Booked hackathons outrun signed pilots, ${portfolioHeadlines.booked} to ${portfolioHeadlines.signed}. Insight is the quiet partner.`;
+function tally(rows: readonly TelemetrySession[]): PortfolioCounts {
+  const decided = rows.filter(isDecided);
+  const signed = rows.filter((row) => row.outcome === "Pilot signed");
+  return {
+    sessions: rows.length,
+    booked: rows.filter((row) => isBookedOutcome(row.outcome)).length,
+    decided: decided.length,
+    signed: signed.length,
+    fundApproved: decided.length * ILLUSTRATIVE_FUND_PER_CLAIM,
+    signedPilotValue: signed.reduce((sum, row) => sum + row.fundedValue, 0),
+  };
+}
+
+/** Sessions, bookings, decisions and signed pilots, per partner and per quarter, from one row set. */
+export function portfolioFromHistory(rows: readonly TelemetrySession[]): Portfolio {
+  const headlines = tally(rows);
+  return {
+    headlines: { ...headlines, approvedClaims: headlines.decided, awaitingDecision: headlines.booked - headlines.decided },
+    partners: partnerOrder.map((partner) => ({ partner, ...tally(rows.filter((row) => row.partner === partner)) })),
+    quarters: quarterOrder.map((quarter) => ({ quarter, ...tally(rows.filter((row) => row.quarter === quarter)) })),
+  };
+}
+
+/** Frozen book. Excludes the live overlay. */
+export const portfolio = portfolioFromHistory(telemetrySeed);
+
+export function formatPortfolioMoney(value: number) {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  return `$${value.toLocaleString("en-US")}`;
+}
+
+export function portfolioSummary(book: Portfolio = portfolio) {
+  const { signed, booked, awaitingDecision } = book.headlines;
+  return `${signed} pilots signed from ${booked} booked hackathons. ${awaitingDecision} are still awaiting a decision.`;
+}
+
+export function fewestSignedPartner(book: Portfolio = portfolio) {
+  return [...book.partners].sort((a, b) => a.signed - b.signed || a.partner.localeCompare(b.partner))[0];
+}
+
+export function fewestSignedLine(book: Portfolio = portfolio) {
+  const quiet = fewestSignedPartner(book);
+  return `${quiet.partner} has signed the fewest: ${quiet.signed} of ${quiet.booked} booked.`;
+}
+
+/** Signed pilot value divided by fund approved, rounded. */
+export function fundRatio(book: Portfolio = portfolio) {
+  const { signedPilotValue, fundApproved } = book.headlines;
+  if (!fundApproved) return 0;
+  return Math.round(signedPilotValue / fundApproved);
 }

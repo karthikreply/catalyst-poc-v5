@@ -3,34 +3,29 @@
 import type { ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
-import {
-  formatPortfolioMoney,
-  portfolioHeadlines,
-  portfolioPartners,
-  portfolioQuarters,
-} from "@/lib/pdm-portfolio";
+import { formatPortfolioMoney, portfolio } from "@/lib/pdm-portfolio";
 
 const slate = "#334155";
 const slateMid = "#64748b";
 const slateLight = "#94a3b8";
 
 const dropRows = [
-  { stage: "Sessions", value: portfolioHeadlines.sessions },
-  { stage: "Hackathons booked", value: portfolioHeadlines.booked },
-  { stage: "Pilots signed", value: portfolioHeadlines.signed },
+  { stage: "Sessions", value: portfolio.headlines.sessions },
+  { stage: "Hackathons booked", value: portfolio.headlines.booked },
+  { stage: "Pilots signed", value: portfolio.headlines.signed },
 ];
 
-const partnerRows = portfolioPartners.map((row) => ({
+const partnerRows = portfolio.partners.map((row) => ({
   partner: row.partner,
   signed: row.signed,
   bookedNotSigned: row.booked - row.signed,
   notBooked: row.sessions - row.booked,
 }));
 
-const moneyRows = portfolioPartners.map((row) => ({
+const moneyRows = portfolio.partners.map((row) => ({
   partner: row.partner,
   fundApproved: row.fundApproved,
-  pipeline: row.pipeline,
+  signedPilotValue: row.signedPilotValue,
 }));
 
 function Illustrative({ title, children, table }: { title: string; children: ReactNode; table: ReactNode }) {
@@ -108,8 +103,8 @@ export function PortfolioCharts() {
         title="Money"
         table={(
           <NumberTable
-            headers={["Partner", "Fund approved", "Pipeline"]}
-            rows={moneyRows.map((row) => [row.partner, formatPortfolioMoney(row.fundApproved), formatPortfolioMoney(row.pipeline)])}
+            headers={["Partner", "Fund approved", "Signed pilot value"]}
+            rows={moneyRows.map((row) => [row.partner, formatPortfolioMoney(row.fundApproved), formatPortfolioMoney(row.signedPilotValue)])}
           />
         )}
       >
@@ -120,7 +115,7 @@ export function PortfolioCharts() {
           <YAxis tickFormatter={(value: number) => formatPortfolioMoney(value)} tick={{ fill: slate, fontSize: 12 }} width={56} />
           <Legend />
           <Bar dataKey="fundApproved" name="Fund approved" fill={slate} isAnimationActive={false} />
-          <Bar dataKey="pipeline" name="Pipeline" fill={slateMid} isAnimationActive={false} />
+          <Bar dataKey="signedPilotValue" name="Signed pilot value" fill={slateMid} isAnimationActive={false} />
         </BarChart>
         </ResponsiveContainer>
       </Illustrative>
@@ -130,12 +125,12 @@ export function PortfolioCharts() {
         table={(
           <NumberTable
             headers={["Quarter", "Sessions", "Hackathons booked", "Pilots signed"]}
-            rows={portfolioQuarters.map((row) => [row.quarter, row.sessions, row.booked, row.signed])}
+            rows={portfolio.quarters.map((row) => [row.quarter, row.sessions, row.booked, row.signed])}
           />
         )}
       >
         <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={[...portfolioQuarters]}>
+        <LineChart data={[...portfolio.quarters]}>
           <CartesianGrid stroke="#e2e8f0" />
           <XAxis dataKey="quarter" tick={{ fill: slate, fontSize: 11 }} />
           <YAxis tick={{ fill: slate, fontSize: 12 }} />

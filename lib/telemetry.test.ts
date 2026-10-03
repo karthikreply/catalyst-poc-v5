@@ -71,10 +71,12 @@ describe("telemetryBenchmarks", () => {
 
     expect(rows).toHaveLength(63);
     expect(summary.sessionsRun).toBe(51);
-    expect(summary.fundingClaimsSubmitted).toBe(34);
     expect(summary.hackathonsBooked).toBe(28);
-    expect(summary.sessionsRun).toBeLessThan(rows.length);
-    expect(summary.hackathonsBooked).toBeLessThan(summary.fundingClaimsSubmitted);
+    expect(summary.hackathonsDecided).toBe(16);
+    expect(summary.pilotsSigned).toBe(9);
+    expect(summary.fundingClaimsSubmitted).toBeLessThanOrEqual(summary.hackathonsBooked);
+    expect(summary.fundingClaimsSubmitted).toBeGreaterThanOrEqual(summary.hackathonsDecided);
+    expect(rows.filter((row) => row.fundingClaimSubmitted && row.outcome !== "Hackathon booked" && row.outcome !== "Hackathon decided" && row.outcome !== "Pilot signed")).toHaveLength(0);
   });
 
   it("varies partner patterns, mechanics, delivery, outcomes, and quarters", () => {
@@ -115,6 +117,25 @@ describe("telemetryBenchmarks", () => {
     expect(summary.hackathonsDecided).toBeLessThan(summary.hackathonsBooked);
     expect(summary.pilotsSigned).toBe(signed.length);
     expect(summary.pilotsSigned).toBeLessThan(summary.hackathonsDecided);
+    expect(summary.hackathonsBooked).toBe(112);
+    expect(summary.hackathonsDecided).toBe(56);
+    expect(summary.pilotsSigned).toBe(28);
+    const plan = { CDW: [16, 9], SoftwareOne: [14, 8], Insight: [10, 4], SHI: [16, 7] } as const;
+    for (const [partner, [decided, signed]] of Object.entries(plan)) {
+      const partnerRows = rows.filter((row) => row.partner === partner);
+      const partnerDecided = partnerRows.filter((row) => row.outcome === "Hackathon decided" || row.outcome === "Pilot signed");
+      const partnerSigned = partnerRows.filter((row) => row.outcome === "Pilot signed");
+      const partnerBooked = partnerRows.filter((row) => row.outcome === "Hackathon booked" || row.outcome === "Hackathon decided" || row.outcome === "Pilot signed");
+      expect(partnerDecided).toHaveLength(decided);
+      expect(partnerSigned).toHaveLength(signed);
+      expect(partnerSigned.length).toBeLessThanOrEqual(partnerDecided.length);
+      expect(partnerDecided.length).toBeLessThanOrEqual(partnerBooked.length);
+      expect(partnerBooked.length).toBeLessThanOrEqual(partnerRows.length);
+      expect(partnerSigned.length).toBeGreaterThan(0);
+      expect(partnerSigned.length).toBeLessThan(summary.pilotsSigned);
+      expect(partnerDecided.every((row) => row.fundingClaimSubmitted)).toBe(true);
+      expect(partnerBooked.some((row) => !row.fundingClaimSubmitted)).toBe(true);
+    }
   });
 
   it("counts a signed pilot as proposed and booked, and a plain booking only as booked", () => {

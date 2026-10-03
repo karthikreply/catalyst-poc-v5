@@ -4,8 +4,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { brands } from "@/lib/brands";
+import { awaitingReviewCount, fundingRequestsForPdm } from "@/lib/funding-book";
+import { fewestSignedLine, formatPortfolioMoney, fundRatio, portfolio, portfolioSummary } from "@/lib/pdm-portfolio";
 import { initialSessionGraph } from "@/lib/seed";
-import { bookHackathon, rankedSolutions, recordHandoff, setPilotPick, toggleSelected } from "@/lib/session";
+import { bookHackathon, rankedSolutions, recordHandoff, setPilotPick, submitFundingClaim, toggleSelected } from "@/lib/session";
 
 const useSessionMock = vi.fn();
 const replace = vi.hoisted(() => vi.fn());
@@ -77,62 +79,67 @@ describe("program dashboard", () => {
     sessionFor("pdm", true);
     const markup = renderToStaticMarkup(<Home />);
     expect(markup).toContain("Illustrative portfolio");
-    expect(markup).toContain("125");
-    expect(markup).toContain("56");
-    expect(markup).toContain("26");
-    expect(markup).toContain("$5.0M");
-    expect(markup).toContain("$5.5M");
+    expect(markup).toContain(portfolioSummary());
+    expect(markup).toContain(fewestSignedLine());
+    expect(markup).toContain("Partner names and figures are placeholders.");
+    expect(markup).toContain(String(portfolio.headlines.sessions));
+    expect(markup).toContain(formatPortfolioMoney(portfolio.headlines.fundApproved));
+    expect(markup).toContain(formatPortfolioMoney(portfolio.headlines.signedPilotValue));
+    expect(markup).toContain(`About ${fundRatio()} to 1`);
+    expect(markup).not.toContain("$5.0M");
+    expect(markup).not.toContain("$5.5M");
     expect(markup).toContain("CDW");
     expect(markup).toContain("SoftwareOne");
     expect(markup).toContain("Insight");
     expect(markup).toContain("SHI");
-    expect(markup).toContain("Insight is the quiet partner.");
     expect(markup).toContain("Where the book drops");
     expect(markup).toContain("Partners");
     expect(markup).toContain("Money");
     expect(markup).toContain("Hackathons booked by quarter");
     expect(markup).toContain("Q3 2026");
-    expect(markup).toContain(">11<");
-    expect(markup).toContain("Live session");
-    expect(markup).toContain("Heartland Mutual Insurance");
-    expect(markup).toContain("Not booked");
-    expect(markup.indexOf("Open the session")).toBeLessThan(markup.indexOf("Live session"));
-    expect(markup).toContain('href="/scope"');
-    expect(markup.indexOf("Review funding request")).toBeLessThan(markup.indexOf("Live session"));
+    expect(markup).toContain("Needs your attention");
+    expect(markup).toContain(`${awaitingReviewCount(fundingRequestsForPdm(initialSessionGraph, "CDW"))} claims awaiting review`);
+    expect(markup).toContain("Quiet partner");
     expect(markup).toContain('href="/funding"');
+    expect(markup).toContain('href="/telemetry"');
+    expect(markup).not.toContain("Live session");
+    expect(markup).not.toContain("Heartland Mutual Insurance");
+    expect(markup).not.toContain("Open the session");
+    expect(markup).not.toContain('href="/scope"');
+    expect(markup).not.toContain('href="/run"');
+    expect(markup).not.toContain('href="/sessions"');
     expect(markup).not.toContain("View the rows");
-    expect(markup).not.toContain('href="/telemetry"');
     expect(markup).not.toContain("Three doors");
     expect(markup).not.toContain(">Session</button>");
     expect(markup).not.toContain(">Hackathon</button>");
     expect(markup).not.toContain("AI-assisted claims intake extraction");
   });
 
-  it("changes the live card when the hackathon is booked and leaves the portfolio headlines fixed", () => {
+  it("keeps the portfolio fixed and the session off the PDM home whatever the live session does", () => {
     const booked = bookThree();
     sessionFor("pdm", true, booked);
     const markup = renderToStaticMarkup(<Home />);
-    expect(markup).toContain("Booked");
-    expect(markup).toContain("2026-10-14");
+    expect(markup).not.toContain("2026-10-14");
     for (const id of booked.hackathon!.solutionIds) {
       const title = initialSessionGraph.solutions.find((solution) => solution.id === id)?.title;
-      expect(markup).toContain(title!);
+      expect(markup).not.toContain(title!);
     }
-    expect(markup).not.toContain("Pilot signed");
-    expect(markup).toContain("125");
-    expect(markup).toContain("56");
-    expect(markup).toContain("26");
-    expect(markup).toContain("$5.0M");
-    expect(markup).toContain("$5.5M");
+    expect(markup).toContain(portfolioSummary());
+    expect(markup).toContain(formatPortfolioMoney(portfolio.headlines.fundApproved));
     expect(markup).toContain("Hackathons booked by quarter");
     expect(markup).toContain("Q3 2026");
-    expect(markup).toContain(">11<");
 
     sessionFor("pdm", true, setPilotPick(booked, booked.hackathon!.solutionIds[0]));
     const signed = renderToStaticMarkup(<Home />);
-    expect(signed).toContain("Pilot signed");
-    expect(signed).toContain("$5.0M");
-    expect(signed).toContain("$5.5M");
+    expect(signed).not.toContain("Pilot signed");
+    expect(signed).toContain(formatPortfolioMoney(portfolio.headlines.fundApproved));
+  });
+
+  it("counts the Heartland claim once the partner has submitted it", () => {
+    sessionFor("pdm", true, submitFundingClaim(initialSessionGraph, "Ravi Menon"));
+    const markup = renderToStaticMarkup(<Home />);
+    const requests = fundingRequestsForPdm(submitFundingClaim(initialSessionGraph, "Ravi Menon"), "CDW");
+    expect(markup).toContain(`${awaitingReviewCount(requests)} claims awaiting review`);
   });
 
   it("keeps the partner on his session, funding, and telemetry", () => {

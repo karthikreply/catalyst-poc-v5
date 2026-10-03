@@ -56,6 +56,7 @@ import {
   setSamplePosition as setSamplePositionInGraph,
   startOverSampleRun as startOverSampleRunInGraph,
   startSampleRun as startSampleRunInGraph,
+  submitFundingClaim as submitFundingClaimInGraph,
   toggleSelected as toggleSelectedInGraph,
   unlockRanking as unlockRankingInGraph,
   updateCapture as updateCaptureInGraph,
@@ -107,6 +108,7 @@ type SessionContextValue = {
   setPilotPick: (solutionId: string) => void;
   recordNotGoingAhead: () => void;
   markPilotSigned: () => void;
+  submitFundingClaim: () => void;
   recordHandoff: (kind: HandoffKind) => void;
   chooseCustomerFormat: (mechanic: Mechanic) => void;
   startSampleRun: () => void;
@@ -427,6 +429,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setGraph((current) => (canRecordHackathonDecision(actor, current) ? markPilotSignedInGraph(current, viewer.name) : current));
   }
 
+  function submitFundingClaim() {
+    // Only the partner submits the claim. The PDM sees it in the funding list.
+    if (actor !== "partner") return;
+    setGraph((current) => submitFundingClaimInGraph(current, viewer.name));
+  }
+
   function recordHandoff(kind: HandoffKind) {
     // Only the partner hands the session off. The customer and the PDM only see the result.
     if (actor !== "partner") return;
@@ -509,6 +517,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setPilotPick,
     recordNotGoingAhead,
     markPilotSigned,
+    submitFundingClaim,
     recordHandoff,
     chooseCustomerFormat,
     startSampleRun,

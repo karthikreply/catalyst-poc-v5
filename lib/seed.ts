@@ -9,6 +9,9 @@ export type HackathonDecision = "go" | "not-going-ahead";
 export type PilotSignoff = { at: string; recordedBy: string };
 export type HandoffKind = "daf" | "pilot" | "pdm-notified";
 
+/** The partner's illustrative DAF submission. Null until recorded; recorded once. */
+export type FundingClaim = { at: string; recordedBy: string; amount: number };
+
 /** What the partner did with the session after the room: recorded once, never replaced. */
 export type Handoff = {
   kind: HandoffKind;
@@ -107,6 +110,8 @@ export type Session = {
   focus: SessionFocus;
   /** Recorded after Go. Null until someone marks the pilot signed. */
   pilotSigned: PilotSignoff | null;
+  /** Partner's funding submission. Null until the partner records it on Funding. */
+  fundingClaim: FundingClaim | null;
 };
 
 export type AgendaStep = {
@@ -349,6 +354,7 @@ export const initialSessionGraph: SessionGraph = {
     handoff: null,
     focus: "session",
     pilotSigned: null,
+    fundingClaim: null,
   },
   agenda: [
     ["where-it-hurts", "Where it hurts", "Walk me through what happens when a claim arrives.", 30, "done"],

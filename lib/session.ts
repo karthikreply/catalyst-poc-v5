@@ -1,4 +1,5 @@
 import type { Brand } from "./brands";
+import { ILLUSTRATIVE_FUND_PER_CLAIM } from "./pdm-portfolio";
 import { ledgerAnnualTotal } from "./cost-model";
 import {
   businessCaseSolutionIds,
@@ -20,6 +21,7 @@ import {
   type HandoffKind,
   type Mechanic,
   type PilotSignoff,
+  type FundingClaim,
   type PartnerNote,
   type SampleRun,
   type Session,
@@ -157,6 +159,14 @@ function hydratePilotSigned(value: unknown): PilotSignoff | null {
   return { at: candidate.at, recordedBy: candidate.recordedBy };
 }
 
+function hydrateFundingClaim(value: unknown): FundingClaim | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<FundingClaim>;
+  if (typeof candidate.at !== "string" || typeof candidate.recordedBy !== "string" || !candidate.recordedBy.trim()) return null;
+  if (typeof candidate.amount !== "number" || !Number.isFinite(candidate.amount)) return null;
+  return { at: candidate.at, recordedBy: candidate.recordedBy, amount: candidate.amount };
+}
+
 function hydrateHackathonDecision(value: unknown): HackathonDecision | null {
   return value === "go" || value === "not-going-ahead" ? value : null;
 }
@@ -214,6 +224,7 @@ export function hydrateSessionGraph(value: SessionGraph | null): SessionGraph {
       handoff: hydrateHandoff(value.session.handoff),
       focus: value.session.focus === "hackathon" ? "hackathon" : "session",
       pilotSigned: hydratePilotSigned(value.session.pilotSigned),
+      fundingClaim: hydrateFundingClaim(value.session.fundingClaim),
     },
     valueInputs: migrateConfirmedBy(legacyCold
       ? emptyValueInputs(sessionId)
@@ -1250,6 +1261,22 @@ export function markPilotSigned(graph: SessionGraph, recordedBy: string): Sessio
     session: {
       ...graph.session,
       pilotSigned: { at: new Date().toISOString(), recordedBy: name },
+    },
+  };
+}
+
+/** Illustrative hackathon-scale claim. Frozen; not derived from the value figure. */
+export const fundingClaimAmount = ILLUSTRATIVE_FUND_PER_CLAIM;
+
+/** Partner records the funding submission, once. A second call keeps the first record. */
+export function submitFundingClaim(graph: SessionGraph, recordedBy: string): SessionGraph {
+  const name = recordedBy.trim();
+  if (!name || graph.session.fundingClaim) return graph;
+  return {
+    ...graph,
+    session: {
+      ...graph.session,
+      fundingClaim: { at: new Date().toISOString(), recordedBy: name, amount: fundingClaimAmount },
     },
   };
 }

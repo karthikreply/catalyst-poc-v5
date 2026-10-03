@@ -7,8 +7,9 @@ import { ArrowRight, BadgeDollarSign, ChartNoAxesCombined } from "lucide-react";
 
 import { useSession } from "@/components/session-provider";
 import { PortfolioCharts } from "@/components/portfolio-charts";
-import { formatPortfolioMoney, portfolioHeadlines, portfolioLine, portfolioPartners } from "@/lib/pdm-portfolio";
-import { catalogSolutionById, customerSponsor, handoffLabel, isCustomerViewer } from "@/lib/session";
+import { awaitingReviewCount, fundingRequestsForPdm } from "@/lib/funding-book";
+import { fewestSignedLine, formatPortfolioMoney, fundRatio, portfolio, portfolioSummary } from "@/lib/pdm-portfolio";
+import { customerSponsor, handoffLabel, isCustomerViewer } from "@/lib/session";
 
 export default function Home() {
   const { graph, brand, viewer, setFocus, hydrated } = useSession();
@@ -69,71 +70,51 @@ export default function Home() {
 }
 
 function PdmHome() {
-  const { graph, brand, setFocus } = useSession();
-  const booked = Boolean(graph.hackathon?.booked);
-  const titles = booked
-    ? graph.hackathon!.solutionIds.flatMap((id) => {
-        const solution = catalogSolutionById(id, graph);
-        return solution ? [solution.title] : [];
-      })
-    : [];
+  const { graph, brand } = useSession();
+  const requests = fundingRequestsForPdm(graph, brand.partnerName);
+  const awaiting = awaitingReviewCount(requests);
+  const awaitingAmount = requests.filter((row) => row.status === "awaiting-review").reduce((sum, row) => sum + row.amount, 0);
+  const awaitingPartners = new Set(requests.filter((row) => row.status === "awaiting-review").map((row) => row.partner)).size;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
       <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <section className="md-card-outlined flex flex-col p-6" aria-labelledby="portfolio-title">
           <h1 id="portfolio-title" className="md-headline-medium">Illustrative portfolio</h1>
-          <p className="md-body-medium mt-2 text-[var(--md-sys-color-on-surface-variant)]">{portfolioLine()}</p>
+          <p className="md-body-medium mt-2 text-[var(--md-sys-color-on-surface-variant)]">{portfolioSummary()}</p>
+          <p className="md-body-medium mt-1 text-[var(--md-sys-color-on-surface-variant)]">{fewestSignedLine()}</p>
+          <p className="md-label-medium mt-2 text-[var(--md-sys-color-on-surface-variant)]">Partner names and figures are placeholders.</p>
           <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <Headline term="Sessions" detail={String(portfolioHeadlines.sessions)} />
-            <Headline term="Hackathons booked" detail={String(portfolioHeadlines.booked)} />
-            <Headline term="Pilots signed" detail={String(portfolioHeadlines.signed)} />
-            <Headline term="Fund approved" detail={`${formatPortfolioMoney(portfolioHeadlines.fundApproved)} across ${portfolioHeadlines.claims} claims`} />
-            <Headline term="Pipeline" detail={formatPortfolioMoney(portfolioHeadlines.pipeline)} />
+            <Headline term="Sessions" detail={String(portfolio.headlines.sessions)} />
+            <Headline term="Hackathons booked" detail={String(portfolio.headlines.booked)} />
+            <Headline term="Pilots signed" detail={String(portfolio.headlines.signed)} />
+            <Headline term="Fund approved" detail={`${formatPortfolioMoney(portfolio.headlines.fundApproved)} across ${portfolio.headlines.approvedClaims} claims`} />
+            <Headline term="Signed pilot value" detail={formatPortfolioMoney(portfolio.headlines.signedPilotValue)} />
+            <Headline term="Signed value to fund" detail={`About ${fundRatio()} to 1`} />
           </dl>
           <div className="mt-auto flex flex-wrap items-center gap-3 pt-6">
-            <Link href="/scope" onClick={() => setFocus("session")} className="md-button-filled">Open the session</Link>
-            <Link href="/funding" className="md-button-outlined">Review funding request</Link>
+            <Link href="/funding" className="md-button-filled">Funding requests</Link>
+            <Link href="/telemetry" className="md-button-outlined">Telemetry</Link>
           </div>
         </section>
 
-        <section className="md-card-outlined p-6" aria-labelledby="live-session-title">
-          <h2 id="live-session-title" className="md-title-large">Live session</h2>
-          <dl className="mt-4 space-y-3">
-            <div>
-              <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Customer</dt>
-              <dd className="md-title-medium mt-1">{graph.session.customerName}</dd>
-            </div>
-            <div>
-              <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Partner</dt>
-              <dd className="md-title-medium mt-1">{brand.partnerName}</dd>
-            </div>
-            <div>
-              <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Hackathon</dt>
-              <dd className="md-title-medium mt-1">{booked ? "Booked" : "Not booked"}</dd>
-            </div>
-            {booked && (
-              <div>
-                <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Date</dt>
-                <dd className="md-title-medium mt-1">{graph.hackathon?.date}</dd>
-              </div>
-            )}
-            {graph.outcome.pilotPick && (
-              <div>
-                <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Pilot</dt>
-                <dd className="md-title-medium mt-1">Pilot signed</dd>
-              </div>
-            )}
-            <div>
-              <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Handoff</dt>
-              <dd className="md-title-medium mt-1">{handoffLabel(graph.session.handoff)}</dd>
-            </div>
-          </dl>
-          {booked && titles.length > 0 && (
-            <ul className="mt-4 space-y-1">
-              {titles.map((title) => <li key={title} className="md-body-medium">{title}</li>)}
-            </ul>
-          )}
+        <section className="md-card-outlined p-6" aria-labelledby="attention-title">
+          <h2 id="attention-title" className="md-title-large">Needs your attention</h2>
+          <ul className="mt-4 space-y-4">
+            <li>
+              <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Funding</p>
+              <Link href="/funding" className="md-title-medium mt-1 block text-[var(--md-sys-color-primary)] underline-offset-4 hover:underline">
+                {awaiting} {awaiting === 1 ? "claim" : "claims"} awaiting review
+              </Link>
+              <p className="md-body-medium mt-1 text-[var(--md-sys-color-on-surface-variant)]">
+                {formatPortfolioMoney(awaitingAmount)} requested across {awaitingPartners} partners.
+              </p>
+            </li>
+            <li>
+              <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Quiet partner</p>
+              <p className="md-title-medium mt-1">{fewestSignedLine()}</p>
+            </li>
+          </ul>
         </section>
       </div>
       <PortfolioCharts />
@@ -146,18 +127,18 @@ function PdmHome() {
               <th className="py-2 pr-3 font-medium">Hackathons booked</th>
               <th className="py-2 pr-3 font-medium">Pilots signed</th>
               <th className="py-2 pr-3 font-medium">Fund approved</th>
-              <th className="py-2 font-medium">Pipeline</th>
+              <th className="py-2 font-medium">Signed pilot value</th>
             </tr>
           </thead>
           <tbody>
-            {portfolioPartners.map((row) => (
+            {portfolio.partners.map((row) => (
               <tr key={row.partner} className="border-b border-[var(--md-sys-color-outline-variant)]">
                 <td className="py-2 pr-3">{row.partner}</td>
                 <td className="py-2 pr-3">{row.sessions}</td>
                 <td className="py-2 pr-3">{row.booked}</td>
                 <td className="py-2 pr-3">{row.signed}</td>
                 <td className="py-2 pr-3">{formatPortfolioMoney(row.fundApproved)}</td>
-                <td className="py-2">{formatPortfolioMoney(row.pipeline)}</td>
+                <td className="py-2">{formatPortfolioMoney(row.signedPilotValue)}</td>
               </tr>
             ))}
           </tbody>

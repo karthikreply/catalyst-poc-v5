@@ -100,7 +100,7 @@ function row(
     closeStyle: index % 31 === 0 ? "board-slide" : "owner-and-ask",
     qualified,
     converted,
-    fundingClaimSubmitted: converted,
+    fundingClaimSubmitted: false,
     daysToFunded: converted ? 21 + (index % 40) : null,
     sampleRun: index % 5 === 0,
   };
@@ -135,31 +135,39 @@ export function buildTelemetrySessions(): TelemetrySession[] {
     rows[index] = { ...rows[index], outcome: "Scoped" };
   }
 
-  const cdwSubmitted = rows
-    .flatMap((item, index) => (
-      item.partner === "CDW" &&
-      item.outcome === "Hackathon proposed" &&
-      !item.converted
-        ? [index]
-        : []
-    ))
-    .slice(0, 6);
-  for (const index of cdwSubmitted) {
-    rows[index] = { ...rows[index], fundingClaimSubmitted: true };
+  // Stages are spread across partners. Signed stays inside decided, and decided inside booked.
+  const stagePlan: Record<TelemetryPartner, { decided: number; signed: number }> = {
+    CDW: { decided: 16, signed: 9 },
+    SoftwareOne: { decided: 14, signed: 8 },
+    Insight: { decided: 10, signed: 4 },
+    SHI: { decided: 16, signed: 7 },
+  };
+  for (const partner of partners) {
+    const bookedIndexes = rows.flatMap((item, index) => (
+      item.partner === partner && item.outcome === "Hackathon booked" ? [index] : []
+    ));
+    const plan = stagePlan[partner];
+    const decidedIndexes = evenlySpacedIndexes(bookedIndexes, plan.decided);
+    for (const index of decidedIndexes) {
+      rows[index] = { ...rows[index], outcome: "Hackathon decided" };
+    }
+    for (const index of evenlySpacedIndexes(decidedIndexes, plan.signed)) {
+      rows[index] = { ...rows[index], outcome: "Pilot signed" };
+    }
   }
 
-  // Drop off: half of the bookings are decided, and half of those are signed.
-  let bookedPosition = 0;
+  // A claim sits only on a booked row. Every decided row has one. Every fourth open booking has none.
+  const openClaimPosition: Partial<Record<TelemetryPartner, number>> = {};
   for (const [index, item] of rows.entries()) {
-    if (item.outcome !== "Hackathon booked") continue;
-    bookedPosition += 1;
-    if (bookedPosition % 2 === 0) rows[index] = { ...item, outcome: "Hackathon decided" };
-  }
-  let decidedPosition = 0;
-  for (const [index, item] of rows.entries()) {
-    if (item.outcome !== "Hackathon decided") continue;
-    decidedPosition += 1;
-    if (decidedPosition % 2 === 0) rows[index] = { ...item, outcome: "Pilot signed" };
+    const decided = item.outcome === "Hackathon decided" || item.outcome === "Pilot signed";
+    let claim = false;
+    if (decided) claim = true;
+    else if (isBookedOutcome(item.outcome)) {
+      const position = openClaimPosition[item.partner] ?? 0;
+      openClaimPosition[item.partner] = position + 1;
+      claim = position % 4 !== 0;
+    }
+    rows[index] = { ...item, fundingClaimSubmitted: claim };
   }
   return rows;
 }
