@@ -30,7 +30,7 @@ import { isCustomerViewer,
 import { formatCurrency } from "@/lib/value";
 
 function useFundingData() {
-  const { graph, brand, viewer, submitFundingClaim } = useSession();
+  const { graph, brand, viewer, submitFundingClaim, withdrawFundingClaim } = useSession();
   const people = withBrandPeople(brand);
   const claims = claimsArtifactCopy(graph);
   const ghost = graph.session.mechanic === "ghost-ledger";
@@ -48,7 +48,7 @@ function useFundingData() {
       ? "$4.8M–$9.7M / year"
       : `${formatCurrency(annualValue)} / year`;
 
-  return { graph, brand, viewer, people, claims, ghost, value, submitFundingClaim };
+  return { graph, brand, viewer, people, claims, ghost, value, submitFundingClaim, withdrawFundingClaim };
 }
 
 type FundingData = ReturnType<typeof useFundingData>;
@@ -64,8 +64,9 @@ export default function FundingPage() {
 }
 
 function PartnerFundingRequest({ data }: { data: FundingData }) {
-  const { graph, brand, people, claims, ghost, value, submitFundingClaim } = data;
+  const { graph, brand, people, claims, ghost, value, submitFundingClaim, withdrawFundingClaim } = data;
   const submitted = graph.session.fundingClaim;
+  const booked = Boolean(graph.hackathon?.booked);
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8 lg:px-8">
@@ -76,7 +77,7 @@ function PartnerFundingRequest({ data }: { data: FundingData }) {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-black/58">Review the evidence carried from the business case before submitting it through the partner portal.</p>
         </div>
         <span className="rounded-sm border border-black/15 bg-white px-3 py-2 text-xs font-medium">
-          {submitted ? "Submitted · awaiting review" : "Draft · not submitted"}
+          {submitted ? "Submitted · demo only" : "Draft · not submitted"}
         </span>
       </div>
 
@@ -125,19 +126,26 @@ function PartnerFundingRequest({ data }: { data: FundingData }) {
           <h2 className="mt-4 text-lg font-semibold">Partner submission</h2>
           <p className="mt-2 text-sm leading-6 text-black/58">Practice sponsor: {people.sponsorLine}</p>
           {submitted ? (
-            <p className="mt-5 rounded-sm bg-[color-mix(in_srgb,var(--brand-accent)_8%,white)] p-3 text-sm leading-6">
-              Submitted by {submitted.recordedBy} for {formatFundingAmount(submitted.amount)}. The PDM sees it under Funding.
-            </p>
+            <>
+              <p className="mt-5 rounded-sm bg-[color-mix(in_srgb,var(--brand-accent)_8%,white)] p-3 text-sm leading-6">
+                Recorded in this demo only. Nothing was sent.
+              </p>
+              <button type="button" disabled className={buttonVariants({ className: "mt-5 w-full cursor-not-allowed opacity-55" })}>Submitted</button>
+              <button type="button" onClick={withdrawFundingClaim} className="mt-3 text-sm underline-offset-2 hover:underline">Withdraw</button>
+            </>
           ) : (
-            <button
-              type="button"
-              onClick={submitFundingClaim}
-              className={buttonVariants({ className: "mt-5 w-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-dark)]" })}
-            >
-              Submit funding claim
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={!booked}
+                onClick={() => submitFundingClaim()}
+                className={buttonVariants({ className: "mt-5 w-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-dark)] disabled:cursor-not-allowed disabled:opacity-55" })}
+              >
+                Submit funding claim
+              </button>
+              {!booked && <p className="mt-2 text-xs leading-5 text-black/48">Book the hackathon first.</p>}
+            </>
           )}
-          <p className="mt-2 text-xs leading-5 text-black/48">Illustrative only. Recorded in this demo; production submission happens in {brand.partnerName}&apos;s partner portal.</p>
         </aside>
       </div>
 
@@ -160,10 +168,15 @@ function PdmFundingRequests({ data }: { data: FundingData }) {
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [packOpen, setPackOpen] = useState(false);
+  const [partnerFilter, setPartnerFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const requests = fundingRequestsForPdm(graph, brand.partnerName);
   const approved = approvedTotal(requests);
   const awaiting = awaitingReviewCount(requests);
-  const visible = showAll ? requests : requests.slice(0, fundingListPageSize);
+  const filtered = requests.filter((row) => (
+    (partnerFilter === "all" || row.partner === partnerFilter) && (statusFilter === "all" || row.status === statusFilter)
+  ));
+  const visible = showAll ? filtered : filtered.slice(0, fundingListPageSize);
 
   if (packOpen) return <VendorFundingReview data={data} onBack={() => setPackOpen(false)} />;
 
@@ -171,9 +184,38 @@ function PdmFundingRequests({ data }: { data: FundingData }) {
     <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
       <p className="md-label-large text-[var(--md-sys-color-primary)]">Funding</p>
       <h1 className="md-headline-medium mt-1">Funding requests</h1>
-      <p className="md-body-large mt-3 max-w-3xl text-[var(--md-sys-color-on-surface-variant)]">
-        Claims from the partners you cover. Approved claims total {formatPortfolioMoney(approved.amount)} across {approved.count} claims, as on the dashboard. {awaiting} awaiting review.
-      </p>
+      <p className="md-body-large mt-3 max-w-3xl text-[var(--md-sys-color-on-surface-variant)]">Claims submitted by the partners you cover.</p>
+      <dl className="mt-5 grid gap-3 sm:grid-cols-4">
+        {[
+          ["Requests", String(requests.length)],
+          ["Awaiting review", String(awaiting)],
+          ["Approved", String(approved.count)],
+          ["Fund approved", `${formatPortfolioMoney(approved.amount)} across ${approved.count} claims`],
+        ].map(([term, detail]) => (
+          <div key={term} className="md-card-outlined p-4">
+            <dt className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">{term}</dt>
+            <dd className="md-title-medium mt-1">{detail}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <label className="md-label-medium flex items-center gap-2">
+          Partner
+          <select aria-label="Partner" value={partnerFilter} onChange={(event) => { setPartnerFilter(event.target.value); setShowAll(false); }} className="md-body-medium rounded-[var(--md-sys-shape-small)] border border-[var(--md-sys-color-outline)] bg-transparent px-2 py-1">
+            <option value="all">All partners</option>
+            {["CDW", "SoftwareOne", "Insight", "SHI"].map((partner) => <option key={partner} value={partner}>{partner}</option>)}
+          </select>
+        </label>
+        <label className="md-label-medium flex items-center gap-2">
+          Status
+          <select aria-label="Status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setShowAll(false); }} className="md-body-medium rounded-[var(--md-sys-shape-small)] border border-[var(--md-sys-color-outline)] bg-transparent px-2 py-1">
+            <option value="all">All statuses</option>
+            <option value="awaiting-review">Awaiting review</option>
+            <option value="approved">Approved</option>
+            <option value="returned">Returned</option>
+          </select>
+        </label>
+      </div>
 
       <section className="md-card-outlined mt-7 overflow-hidden" aria-label="Funding requests">
         <div className="overflow-x-auto">
@@ -190,6 +232,9 @@ function PdmFundingRequests({ data }: { data: FundingData }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]">
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="px-5 py-8 text-[var(--md-sys-color-on-surface-variant)]">No requests match.</td></tr>
+              )}
               {visible.map((row) => {
                 const expanded = open === row.id;
                 return (
@@ -206,15 +251,15 @@ function PdmFundingRequests({ data }: { data: FundingData }) {
           </table>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--md-sys-color-outline-variant)] px-5 py-3">
-          <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Showing {visible.length} of {requests.length}</p>
-          {requests.length > fundingListPageSize && (
+          <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Showing {visible.length} of {filtered.length}</p>
+          {filtered.length > fundingListPageSize && (
             <button type="button" onClick={() => setShowAll((value) => !value)} className="md-button-text">
-              {showAll ? "Show fewer" : "Show all"}
+              {showAll ? "Show fewer" : `Show all ${filtered.length}`}
             </button>
           )}
         </div>
       </section>
-      <p className="md-label-medium mt-4 text-[var(--md-sys-color-on-surface-variant)]">Illustrative. Approval happens in the partner portal.</p>
+      <p className="md-label-medium mt-4 text-[var(--md-sys-color-on-surface-variant)]">Customer names appear because the partner submitted these claims. Drafts stay with the partner until they submit.</p>
     </div>
   );
 }
@@ -246,6 +291,11 @@ function FundingRow({ row, expanded, onToggle, onOpenPack }: { row: FundingClaim
                 <li key={item.label}>{item.done ? "Done" : "Open"} · {item.label}</li>
               ))}
             </ul>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button type="button" disabled className="md-button-filled cursor-not-allowed opacity-55">Approve</button>
+              <button type="button" disabled className="md-button-outlined cursor-not-allowed opacity-55">Return</button>
+              <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">Approval happens in the vendor&apos;s funding system.</p>
+            </div>
             {onOpenPack && (
               <button type="button" onClick={onOpenPack} className="md-button-filled mt-3">
                 Open the pack <ArrowRight className="size-4" />
@@ -276,7 +326,7 @@ function VendorFundingReview({ data, onBack }: { data: FundingData; onBack?: () 
               <p className="md-title-medium">Session evidence</p>
               <p className="md-label-medium text-[var(--md-sys-color-on-surface-variant)]">{graph.session.id}</p>
             </div>
-            <span className="md-chip ml-auto">{submitted ? "Submitted · awaiting review" : "Draft · not submitted"}</span>
+            <span className="md-chip ml-auto">{submitted ? "Submitted · demo only" : "Draft · not submitted"}</span>
           </div>
 
           <dl className="grid gap-px bg-[var(--md-sys-color-outline-variant)] sm:grid-cols-2">
@@ -322,7 +372,7 @@ function VendorFundingReview({ data, onBack }: { data: FundingData; onBack?: () 
           <button type="button" disabled className="md-button-filled mt-5 w-full cursor-not-allowed opacity-55">
             {viewer.actor === "partner" ? "Submit funding claim" : "Approve funding claim"}
           </button>
-          <p className="md-label-medium mt-3 text-[var(--md-sys-color-on-surface-variant)]">Disabled · illustrative. Submission and approval happen in the partner portal.</p>
+          <p className="md-label-medium mt-3 text-[var(--md-sys-color-on-surface-variant)]">Approval happens in the vendor&apos;s funding system.</p>
         </aside>
       </div>
 

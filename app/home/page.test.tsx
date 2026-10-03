@@ -140,9 +140,10 @@ describe("program dashboard", () => {
   });
 
   it("counts the Heartland claim once the partner has submitted it", () => {
-    sessionFor("pdm", true, submitFundingClaim(initialSessionGraph, "Ravi Menon"));
+    const submitted = submitFundingClaim(bookThree(), "Ravi Menon");
+    sessionFor("pdm", true, submitted);
     const markup = renderToStaticMarkup(<Home />);
-    const requests = fundingRequestsForPdm(submitFundingClaim(initialSessionGraph, "Ravi Menon"), "CDW");
+    const requests = fundingRequestsForPdm(submitted, "CDW");
     expect(markup).toContain(`${awaitingReviewCount(requests)} funding requests awaiting review`);
   });
 

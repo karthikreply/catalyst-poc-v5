@@ -346,6 +346,7 @@ export function applyColdScope(
       claimsVolumeChoice: enteringCold ? null : graph.session.claimsVolumeChoice,
       reusePriorPilotSpec: enteringCold ? null : graph.session.reusePriorPilotSpec,
       ledgerFrozen: enteringCold ? false : graph.session.ledgerFrozen,
+      fundingClaim: null,
     },
     coldCompany: company,
     coldAttendees: attendees,
@@ -1268,10 +1269,10 @@ export function markPilotSigned(graph: SessionGraph, recordedBy: string): Sessio
 /** Illustrative hackathon-scale claim. Frozen; not derived from the value figure. */
 export const fundingClaimAmount = ILLUSTRATIVE_FUND_PER_CLAIM;
 
-/** Partner records the funding submission, once. A second call keeps the first record. */
+/** Partner records the demo submission, once, and only after the hackathon is booked. */
 export function submitFundingClaim(graph: SessionGraph, recordedBy: string): SessionGraph {
   const name = recordedBy.trim();
-  if (!name || graph.session.fundingClaim) return graph;
+  if (!name || !graph.hackathon?.booked || graph.session.fundingClaim) return graph;
   return {
     ...graph,
     session: {
@@ -1279,6 +1280,12 @@ export function submitFundingClaim(graph: SessionGraph, recordedBy: string): Ses
       fundingClaim: { at: new Date().toISOString(), recordedBy: name, amount: fundingClaimAmount },
     },
   };
+}
+
+/** Returns the demo claim to draft. Nothing was sent, so there is nothing to recall. */
+export function withdrawFundingClaim(graph: SessionGraph): SessionGraph {
+  if (!graph.session.fundingClaim) return graph;
+  return { ...graph, session: { ...graph.session, fundingClaim: null } };
 }
 
 /** Partner records what happened after the room, once. A second call returns the same graph. */

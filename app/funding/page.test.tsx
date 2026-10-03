@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { brands } from "@/lib/brands";
 import { fundingBook, fundingListPageSize } from "@/lib/funding-book";
 import { initialSessionGraph } from "@/lib/seed";
-import { applyClaimsVolumeChoice, applyExactClaimsVolume, submitFundingClaim } from "@/lib/session";
+import { applyClaimsVolumeChoice, applyExactClaimsVolume, bookHackathon, rankedSolutions, submitFundingClaim, toggleSelected } from "@/lib/session";
 
 const { useSessionMock } = vi.hoisted(() => ({
   useSessionMock: vi.fn(),
@@ -18,14 +18,22 @@ vi.mock("@/components/session-provider", () => ({
 
 import FundingPage from "./page";
 
-function sessionFor(actor: string, graph = initialSessionGraph, submit = vi.fn()) {
+function bookedGraph() {
+  return bookHackathon(
+    rankedSolutions(initialSessionGraph).slice(0, 3).reduce((current, solution) => toggleSelected(current, solution.id), initialSessionGraph),
+    { date: "2026-10-14", googleFacilitator: "Priya Raghavan", partnerSpecialist: "Ravi Menon", customerOwner: "Dana Reyes", question: "Can we prove the three?" },
+  );
+}
+
+function sessionFor(actor: string, graph = initialSessionGraph, submit = vi.fn(), withdraw = vi.fn()) {
   useSessionMock.mockReturnValue({
     graph,
     brand: brands.cdw,
     viewer: { actor, name: actor === "pdm" ? "Priya Raghavan" : actor === "partner" ? "Ravi Menon" : "Dana Reyes", org: "Org" },
     submitFundingClaim: submit,
+    withdrawFundingClaim: withdraw,
   });
-  return submit;
+  return { submit, withdraw };
 }
 
 describe("exact claims provenance", () => {
@@ -61,18 +69,29 @@ describe("exact claims provenance", () => {
 describe("partner submission", () => {
   afterEach(cleanup);
 
-  it("records the illustrative submission once", () => {
-    const submit = sessionFor("partner");
+  it("stays a draft until the hackathon is booked, then records a demo-only submission", () => {
+    sessionFor("partner");
+    const blocked = render(<FundingPage />);
+    expect(blocked.getByRole("button", { name: "Submit funding claim" }).hasAttribute("disabled")).toBe(true);
+    expect(blocked.container.textContent).toContain("Book the hackathon first.");
+    expect(blocked.container.textContent).not.toContain("filed");
+    blocked.unmount();
+
+    const { submit } = sessionFor("partner", bookedGraph());
     const view = render(<FundingPage />);
-    expect(view.container.textContent).toContain("Draft · not submitted");
+    expect(view.getByRole("button", { name: "Submit funding claim" }).hasAttribute("disabled")).toBe(false);
     fireEvent.click(view.getByRole("button", { name: "Submit funding claim" }));
     expect(submit).toHaveBeenCalledTimes(1);
+    view.unmount();
 
-    sessionFor("partner", submitFundingClaim(initialSessionGraph, "Ravi Menon"));
-    const markup = renderToStaticMarkup(<FundingPage />);
-    expect(markup).toContain("Submitted · awaiting review");
-    expect(markup).toContain("Submitted by Ravi Menon for $25,000");
-    expect(markup).not.toContain(">Submit funding claim<");
+    const recorded = sessionFor("partner", submitFundingClaim(bookedGraph(), "Ravi Menon"));
+    const markup = render(<FundingPage />);
+    expect(markup.container.textContent).toContain("Submitted · demo only");
+    expect(markup.container.textContent).toContain("Recorded in this demo only. Nothing was sent.");
+    expect(markup.container.textContent).not.toContain("filed");
+    expect(markup.container.textContent).not.toContain("awaiting review");
+    fireEvent.click(markup.getByRole("button", { name: "Withdraw" }));
+    expect(recorded.withdraw).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -99,7 +118,7 @@ describe("PDM funding requests", () => {
   it("shows all rows on request and expands a row to its evidence", () => {
     sessionFor("pdm");
     const view = render(<FundingPage />);
-    fireEvent.click(view.getByRole("button", { name: "Show all" }));
+    fireEvent.click(view.getByRole("button", { name: /Show all/ }));
     expect(view.container.textContent).toContain(`Showing ${fundingBook.length} of ${fundingBook.length}`);
 
     const first = fundingBook[0];
@@ -110,7 +129,7 @@ describe("PDM funding requests", () => {
   });
 
   it("adds the Heartland claim after the partner submits, and opens the existing pack from it", () => {
-    sessionFor("pdm", submitFundingClaim(initialSessionGraph, "Ravi Menon"));
+    sessionFor("pdm", submitFundingClaim(bookedGraph(), "Ravi Menon"));
     const view = render(<FundingPage />);
     expect(view.container.textContent).toContain("Heartland Mutual Insurance");
     expect(view.container.textContent).toContain(`Showing ${fundingListPageSize} of ${fundingBook.length + 1}`);
@@ -118,7 +137,7 @@ describe("PDM funding requests", () => {
     fireEvent.click(view.getAllByRole("button", { name: /Evidence/ })[0]);
     fireEvent.click(view.getByRole("button", { name: /Open the pack/ }));
     expect(view.container.textContent).toContain("DAF substantiation pack");
-    expect(view.container.textContent).toContain("Submitted · awaiting review");
+    expect(view.container.textContent).toContain("Submitted · demo only");
     expect(view.container.textContent).toContain("Michelle Dorsey");
     expect(view.container.innerHTML).not.toContain('href="/artifact"');
 

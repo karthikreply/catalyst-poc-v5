@@ -13,7 +13,7 @@ import {
 } from "./funding-book";
 import { ILLUSTRATIVE_FUND_PER_CLAIM, portfolio } from "./pdm-portfolio";
 import { initialSessionGraph } from "./seed";
-import { fundingClaimAmount, submitFundingClaim } from "./session";
+import { bookHackathon, fundingClaimAmount, rankedSolutions, submitFundingClaim, toggleSelected, withdrawFundingClaim } from "./session";
 import { isBookedOutcome, telemetrySeed } from "./telemetry";
 
 describe("funding book", () => {
@@ -68,7 +68,13 @@ describe("funding book", () => {
     expect(liveFundingRequest(initialSessionGraph, "CDW")).toBeNull();
     expect(fundingRequestsForPdm(initialSessionGraph, "CDW").some((row) => row.customer === "Heartland Mutual Insurance")).toBe(false);
 
-    const submitted = submitFundingClaim(initialSessionGraph, "Ravi Menon");
+    const booked = bookHackathon(
+      rankedSolutions(initialSessionGraph).slice(0, 3).reduce((current, solution) => toggleSelected(current, solution.id), initialSessionGraph),
+      { date: "2026-10-14", googleFacilitator: "Priya Raghavan", partnerSpecialist: "Ravi Menon", customerOwner: "Dana Reyes", question: "Can we prove the three?" },
+    );
+    expect(submitFundingClaim(initialSessionGraph, "Ravi Menon").session.fundingClaim).toBeNull();
+    const submitted = submitFundingClaim(booked, "Ravi Menon");
+    expect(withdrawFundingClaim(submitted).session.fundingClaim).toBeNull();
     const live = liveFundingRequest(submitted, "CDW");
     expect(live).toMatchObject({
       partner: "CDW",

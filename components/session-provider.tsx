@@ -57,6 +57,7 @@ import {
   startOverSampleRun as startOverSampleRunInGraph,
   startSampleRun as startSampleRunInGraph,
   submitFundingClaim as submitFundingClaimInGraph,
+  withdrawFundingClaim as withdrawFundingClaimInGraph,
   toggleSelected as toggleSelectedInGraph,
   unlockRanking as unlockRankingInGraph,
   updateCapture as updateCaptureInGraph,
@@ -109,6 +110,7 @@ type SessionContextValue = {
   recordNotGoingAhead: () => void;
   markPilotSigned: () => void;
   submitFundingClaim: () => void;
+  withdrawFundingClaim: () => void;
   recordHandoff: (kind: HandoffKind) => void;
   chooseCustomerFormat: (mechanic: Mechanic) => void;
   startSampleRun: () => void;
@@ -430,9 +432,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   function submitFundingClaim() {
-    // Only the partner submits the claim. The PDM sees it in the funding list.
+    // Only the partner submits the claim, and only once the hackathon is booked.
     if (actor !== "partner") return;
     setGraph((current) => submitFundingClaimInGraph(current, viewer.name));
+  }
+
+  function withdrawFundingClaim() {
+    if (actor !== "partner") return;
+    setGraph((current) => withdrawFundingClaimInGraph(current));
   }
 
   function recordHandoff(kind: HandoffKind) {
@@ -518,6 +525,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     recordNotGoingAhead,
     markPilotSigned,
     submitFundingClaim,
+    withdrawFundingClaim,
     recordHandoff,
     chooseCustomerFormat,
     startSampleRun,
